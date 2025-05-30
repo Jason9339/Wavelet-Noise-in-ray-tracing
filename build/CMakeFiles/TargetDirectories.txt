@@ -1,0 +1,3 @@
+/home/jason/hw1-ppm/build/CMakeFiles/hw1-ppm.dir
+/home/jason/hw1-ppm/build/CMakeFiles/edit_cache.dir
+/home/jason/hw1-ppm/build/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,1 @@
+/usr/bin/c++ -g -Wall CMakeFiles/hw1-ppm.dir/main.cpp.o -o hw1-ppm 
