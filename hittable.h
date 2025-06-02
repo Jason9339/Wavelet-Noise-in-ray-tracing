@@ -3,10 +3,10 @@
 
 #include "ray.h"
 #include <memory>
+#include "aabb.h"
 
 using std::shared_ptr;
 
-// 前向声明
 class material;
 
 struct hit_record {
@@ -35,6 +35,8 @@ class hittable {
     // tmin：避免自相交 (Self-Intersection) / 處理浮點數精度問題 (Shadow Acne / Surface Acne)
     // ray_tmax：定義最遠的可接受交點距離 => 尋找最近的交點、限定搜索範圍的終點（例如陰影射線）、性能優化
     virtual bool hit(const ray& r, float ray_tmin, float ray_tmax, hit_record& rec) const = 0;
+
+    virtual aabb bounding_box() const = 0;
 };
 
 #endif

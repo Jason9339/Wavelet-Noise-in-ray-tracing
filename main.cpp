@@ -1,31 +1,26 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
+#include "rtweekend.h"
+
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <cmath>
-#include <cstdlib>
 #include <cfloat>
 #include <random>
 
-#include "vec3.h"
-#include "ray.h"
 #include "sphere.h"  
 #include "hittable.h" 
 #include "hittable_list.h"
 #include "texture.h"
 #include "material.h"
+#include "quad.h"
+#include "perlin.h"
 
 using namespace std;
 
 // 类型别名
-using color = vec3;
 using point3 = vec3;
-
-inline double random_value() {
-    return random_double();
-}
 
 inline double clamp(double x, double min, double max) {
     if (x < min) return min;
@@ -35,7 +30,86 @@ inline double clamp(double x, double min, double max) {
 
 const int MAX_DEPTH = 10; // 最多遞迴深度
 
+void generate_noise_2d_map() {
+    perlin noise;
 
+    // 圖像與世界座標設定
+    int map_width = 512;
+    int map_height = 512;
+    double y_plane = -0.5;
+    double scale = 1.0; // 用來控制每個格子的尺寸（越小越平滑）
+
+    cout << "正在生成 " << map_width << "x" << map_height << " 的2D噪聲灰度圖..." << endl;
+    cout << "採樣平面: y = " << y_plane << endl;
+    cout << "縮放因子: " << scale << endl;
+
+    vector<unsigned char> noise_image(map_width * map_height * 3);
+
+    double min_val = 1.0, max_val = 0.0; // 用來觀察實際值範圍（debug用）
+
+    for (int j = 0; j < map_height; ++j) {
+        for (int i = 0; i < map_width; ++i) {
+            double x = ((double(i) / map_width) - 0.5) * 20.0;
+            double z = ((double(j) / map_height) - 0.5) * 20.0;
+            point3 p(x, y_plane, z);
+
+            // --- 選擇要顯示的 noise 形式 ---
+            // double raw = noise.noise((p + vec3(100.123, 0.456, 87.789)) * scale);              // 原始 Perlin noise，範圍大致在 [-1,1]
+            double raw = noise.turbulence_noise((p + vec3(100.123, 0.456, 87.789)) * scale); // 使用 turbulence 模式
+            double n = 0.5 + 0.5 * raw;                        // 映射到 [0,1]
+
+            
+
+            n = clamp(n, 0.0, 1.0);
+
+            min_val = std::min(min_val, n);
+            max_val = std::max(max_val, n);
+
+            int gray = static_cast<int>(n * 255.0);
+            int idx = (j * map_width + i) * 3;
+            noise_image[idx + 0] = gray;
+            noise_image[idx + 1] = gray;
+            noise_image[idx + 2] = gray;
+        }
+    }
+
+    cout << "灰階值範圍（已歸一化）: [" << min_val << ", " << max_val << "]" << endl;
+
+    if (stbi_write_png("../noise_2d_map.png", map_width, map_height, 3, noise_image.data(), map_width * 3)) {
+        cout << "2D噪聲灰度圖已保存為: ../noise_2d_map.png" << endl;
+    } else {
+        cout << "保存2D噪聲灰度圖失敗！" << endl;
+    }
+
+    cout << "------------------------" << endl;
+}
+
+
+void test_turbulence_noise_range() {
+    perlin noise;
+    double min_val = 1000.0;
+    double max_val = -1000.0;
+    
+    cout << "測試 turbulence_noise 輸出值範圍..." << endl;
+    
+    for (int i = 0; i < 100; i++) {
+        for (int j = 0; j < 100; j++) {
+            for (int k = 0; k < 100; k++) {
+                point3 test_point(i * 0.1, j * 0.1, k * 0.1);
+                double val = noise.turbulence_noise(test_point);
+                
+                if (val < min_val) min_val = val;
+                if (val > max_val) max_val = val;
+            }
+        }
+    }
+    
+    cout << "turbulence_noise 值範圍:" << endl;
+    cout << "最小值: " << min_val << endl;
+    cout << "最大值: " << max_val << endl;
+    cout << "範圍: [" << min_val << ", " << max_val << "]" << endl;
+    cout << "------------------------" << endl;
+}
 
 vec3 trace(const ray& r, const hittable_list& world, int step, int max_step) {
     if (step > max_step) {
@@ -44,27 +118,27 @@ vec3 trace(const ray& r, const hittable_list& world, int step, int max_step) {
 
     hit_record rec_nearest;
     
-    // 使用 hittable_list 的 hit 方法來找最近的交點
     if (!world.hit(r, 0.001f, FLT_MAX, rec_nearest)) {
         vec3 unit_direction = unit_vector(r.direction());
         float t = 0.5f * (unit_direction.y() + 1.0f);
         return (1.0f - t) * vec3(1, 1, 1) + t * vec3(0.40, 0.50, 1.00);
     }
 
-    // 使用材质的scatter方法来处理光线反射/折射
     color attenuation;
     ray scattered;
     
     if (rec_nearest.mat->scatter(r, rec_nearest, attenuation, scattered)) {
         return attenuation * trace(scattered, world, step + 1, max_step);
     }
-    
-    // 如果材质不散射，返回黑色（或发光材质的颜色）
+
     return rec_nearest.mat->emitted(rec_nearest.u, rec_nearest.v, rec_nearest.p);
 }
 
 
 int main() {
+    test_turbulence_noise_range();
+    generate_noise_2d_map();
+    
     int width = 1000;
     int height = 500;
     int samples_per_pixel = 100;
@@ -93,13 +167,23 @@ int main() {
     auto light_material = make_shared<diffuse_light>(color(4.0, 4.0, 4.0));
     
     // 添加 noise texture 材質
-    auto noise_tex = make_shared<noise_texture>(4.0);
+    auto noise_tex = make_shared<noise_texture>(1.0);
     auto noise_material = make_shared<lambertian>(noise_tex);
       
     // 創建球體（使用材質）  
     hittable_list world;  
     // world.add(make_shared<sphere>(vec3(0, -100.5, -2), 100, ground_material));  
-    world.add(make_shared<sphere>(vec3(0, -100.5, -2), 100, noise_material)); 
+    // world.add(make_shared<sphere>(vec3(0, -100.5, -2), 100, noise_material)); 
+    
+    // 創建水平平面作為地面（替代大球）
+    auto ground_quad = make_shared<quad>(
+        point3(-10, -0.5, -10),  // 平面左下角
+        vec3(20, 0, 0),          // u 向量（水平方向，長度20）
+        vec3(0, 0, 20),          // v 向量（深度方向，長度20）
+        noise_material           // 使用 noise 材質
+    );
+    world.add(ground_quad);
+    
     // world.add(make_shared<sphere>(vec3(0, 0, -2), 0.5, material1));  
     // world.add(make_shared<sphere>(vec3(1, 0, -1.75), 0.5, material2));  
     // world.add(make_shared<sphere>(vec3(-1, 0, -2.25), 0.5, material3));
@@ -108,16 +192,7 @@ int main() {
     world.add(make_shared<sphere>(vec3(-5, 5, 0), 0.8, light_material));
     
     // 添加 noise texture 球體
-    world.add(make_shared<sphere>(vec3(2, 0, -1.25), 0.5, noise_material));  
-
-    // srand(1234);
-    // for (int i = 0; i < 48; i++) {
-    //     float xr = ((float)rand() / RAND_MAX) * 6.0f - 3.0f;
-    //     float zr = ((float)rand() / RAND_MAX) * 3.0f - 1.5f;
-  
-    //     auto random_material = make_shared<lambertian>(color(random_value(), random_value(), random_value()));  
-    //     world.add(make_shared<sphere>(vec3(xr, -0.45, zr - 2), 0.05, random_material));  
-    // }
+    world.add(make_shared<sphere>(vec3(1, 0, -1.75), 0.5, noise_material));  
 
     ofstream file("../raytrace.ppm");
     file << "P3\n" << width << " " << height << "\n255\n";

@@ -7,6 +7,8 @@
 #include <algorithm> // for fmax
 #include <memory>
 
+using point3 = vec3;
+
 class sphere : public hittable {
 public:
     vec3 center;
@@ -29,6 +31,15 @@ public:
 
     sphere(const vec3& center, float radius, std::shared_ptr<material> mat)  
     : center(center), radius(std::fmax(0, radius)), mat(mat) {}
+
+    // 計算 UV 座標（適用於球面貼圖）
+    static void get_sphere_uv(const point3& p, double& u, double& v) {
+        // p：球面上半徑為1的點，轉換成極座標
+        auto theta = acos(-p.y());                  // y = cos(theta)
+        auto phi   = atan2(-p.z(), p.x()) + M_PI;   // atan2(-z, x) ∈ [-π, π] → φ ∈ [0, 2π]
+        u = phi / (2 * M_PI);                       // φ → u ∈ [0,1]
+        v = theta / M_PI;                           // θ → v ∈ [0,1]
+    }
 
     bool hit(const ray& r, float t_min, float t_max, hit_record& rec) const override {
         // 假設球心為 C，射線為 P(t) = O + tD，球體方程為：|P(t) - C|^2 = r^2
@@ -74,8 +85,14 @@ public:
         // 利用 outward normal 決定法線方向是否朝向射線外部
         vec3 outward_normal = (rec.p - center) / radius;
         rec.set_face_normal(r, outward_normal); // 自動判斷 front_face 並設定 normal
+        get_sphere_uv((rec.p - center) / radius, rec.u, rec.v);
 
         return true;
+    }
+
+    aabb bounding_box() const override {
+        vec3 radius_vec(radius, radius, radius);
+        return aabb(center - radius_vec, center + radius_vec);
     }
 };
 

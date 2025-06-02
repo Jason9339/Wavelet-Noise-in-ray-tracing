@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GLSL Ray Tracing - 地板與球體</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #4CAF50;
+        }
+        
+        canvas {
+            border: 2px solid #4CAF50;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(76, 175, 80, 0.3);
+        }
+        
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        label {
+            font-size: 12px;
+            color: #ccc;
+        }
+        
+        input[type="range"] {
+            width: 120px;
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        .info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #2a2a2a;
+            border-radius: 8px;
+            max-width: 600px;
+            text-align: center;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <h1>GLSL Ray Tracing 演示</h1>
+    <canvas id="canvas" width="800" height="600"></canvas>
+    
+    <div class="controls">
+        <div class="control-group">
+            <label>相機 X</label>
+            <input type="range" id="cameraX" min="-5" max="5" step="0.1" value="0">
+        </div>
+        <div class="control-group">
+            <label>相機 Y</label>
+            <input type="range" id="cameraY" min="-2" max="6" step="0.1" value="2.5">
+        </div>
+        <div class="control-group">
+            <label>相機 Z</label>
+            <input type="range" id="cameraZ" min="-5" max="8" step="0.1" value="3.5">
+        </div>
+        <div class="control-group">
+            <label>球體 Y</label>
+            <input type="range" id="sphereY" min="-1" max="3" step="0.1" value="0.5">
+        </div>
+        <div class="control-group">
+            <label>雜訊頻率</label>
+            <input type="range" id="noiseFreq" min="1" max="10" step="0.5" value="4">
+        </div>
+        <button id="resetBtn">重置</button>
+    </div>
+    
+    <div class="info">
+        使用 GLSL 實現的即時 Ray Tracing 演示<br>
+        包含: 反射地板、金屬球體、Perlin 雜訊紋理<br>
+        拖動滑桿可以調整相機位置和參數
+    </div>
+
+    <script src="shader-utils.js"></script>
+    <script src="perlin-noise.js"></script>
+    <script src="main.js"></script>
+</body>
+</html> 

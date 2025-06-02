@@ -38,6 +38,19 @@ class hittable_list : public hittable {
 
         return hit_anything;
     }
+
+    aabb bounding_box() const override {
+        aabb output_box;
+        bool first_box = true;
+
+        for (const auto& object : objects) {
+            aabb temp_box = object->bounding_box();
+            output_box = first_box ? temp_box : aabb(output_box, temp_box);
+            first_box = false;
+        }
+
+        return output_box;
+    }
 };
 
 #endif
