@@ -1,5 +1,7 @@
-CMakeFiles/hw1-ppm.dir/main.cpp.o: /home/jason/hw1-ppm/main.cpp \
- /usr/include/stdc-predef.h /home/jason/hw1-ppm/stb_image_write.h \
+CMakeFiles/hw1-ppm.dir/main.cpp.o: \
+ /home/jason/Wavelet-Noise-in-ray-tracing/main.cpp \
+ /usr/include/stdc-predef.h \
+ /home/jason/Wavelet-Noise-in-ray-tracing/stb_image_write.h \
  /usr/include/c++/11/stdlib.h /usr/include/c++/11/cstdlib \
  /usr/include/x86_64-linux-gnu/c++/11/bits/c++config.h \
  /usr/include/x86_64-linux-gnu/c++/11/bits/os_defines.h \
@@ -94,9 +96,10 @@ CMakeFiles/hw1-ppm.dir/main.cpp.o: /home/jason/hw1-ppm/main.cpp \
  /usr/include/c++/11/tr1/poly_hermite.tcc \
  /usr/include/c++/11/tr1/poly_laguerre.tcc \
  /usr/include/c++/11/tr1/riemann_zeta.tcc /usr/include/assert.h \
- /home/jason/hw1-ppm/rtweekend.h /usr/include/c++/11/iostream \
- /usr/include/c++/11/ostream /usr/include/c++/11/ios \
- /usr/include/c++/11/iosfwd /usr/include/c++/11/bits/stringfwd.h \
+ /home/jason/Wavelet-Noise-in-ray-tracing/rtweekend.h \
+ /usr/include/c++/11/iostream /usr/include/c++/11/ostream \
+ /usr/include/c++/11/ios /usr/include/c++/11/iosfwd \
+ /usr/include/c++/11/bits/stringfwd.h \
  /usr/include/c++/11/bits/memoryfwd.h /usr/include/c++/11/bits/postypes.h \
  /usr/include/c++/11/cwchar /usr/include/wchar.h \
  /usr/include/x86_64-linux-gnu/bits/wchar.h \
@@ -189,10 +192,12 @@ CMakeFiles/hw1-ppm.dir/main.cpp.o: /home/jason/hw1-ppm/main.cpp \
  /usr/include/c++/11/bits/atomic_lockfree_defines.h \
  /usr/include/c++/11/backward/auto_ptr.h \
  /usr/include/c++/11/pstl/glue_memory_defs.h \
- /usr/include/c++/11/pstl/execution_defs.h /home/jason/hw1-ppm/color.h \
- /home/jason/hw1-ppm/interval.h /home/jason/hw1-ppm/vec3.h \
- /home/jason/hw1-ppm/ray.h /usr/include/c++/11/fstream \
- /usr/include/c++/11/bits/codecvt.h \
+ /usr/include/c++/11/pstl/execution_defs.h \
+ /home/jason/Wavelet-Noise-in-ray-tracing/color.h \
+ /home/jason/Wavelet-Noise-in-ray-tracing/interval.h \
+ /home/jason/Wavelet-Noise-in-ray-tracing/vec3.h \
+ /home/jason/Wavelet-Noise-in-ray-tracing/ray.h \
+ /usr/include/c++/11/fstream /usr/include/c++/11/bits/codecvt.h \
  /usr/include/x86_64-linux-gnu/c++/11/bits/basic_file.h \
  /usr/include/x86_64-linux-gnu/c++/11/bits/c++io.h \
  /usr/include/c++/11/bits/fstream.tcc /usr/include/c++/11/vector \
@@ -206,9 +211,10 @@ CMakeFiles/hw1-ppm.dir/main.cpp.o: /home/jason/hw1-ppm/main.cpp \
  /usr/include/c++/11/bits/random.tcc /usr/include/c++/11/numeric \
  /usr/include/c++/11/bits/stl_numeric.h \
  /usr/include/c++/11/pstl/glue_numeric_defs.h \
- /home/jason/hw1-ppm/sphere.h /home/jason/hw1-ppm/hittable.h \
- /home/jason/hw1-ppm/aabb.h /usr/include/c++/11/algorithm \
- /usr/include/c++/11/bits/stl_algo.h \
+ /home/jason/Wavelet-Noise-in-ray-tracing/sphere.h \
+ /home/jason/Wavelet-Noise-in-ray-tracing/hittable.h \
+ /home/jason/Wavelet-Noise-in-ray-tracing/aabb.h \
+ /usr/include/c++/11/algorithm /usr/include/c++/11/bits/stl_algo.h \
  /usr/include/c++/11/bits/algorithmfwd.h \
  /usr/include/c++/11/bits/stl_heap.h \
  /usr/include/c++/11/pstl/glue_algorithm_defs.h \
@@ -218,6 +224,9 @@ CMakeFiles/hw1-ppm.dir/main.cpp.o: /home/jason/hw1-ppm/main.cpp \
  /usr/include/c++/11/bits/enable_special_members.h \
  /usr/include/c++/11/bits/node_handle.h \
  /usr/include/c++/11/bits/unordered_map.h \
- /usr/include/c++/11/bits/erase_if.h /home/jason/hw1-ppm/hittable_list.h \
- /home/jason/hw1-ppm/texture.h /home/jason/hw1-ppm/perlin.h \
- /home/jason/hw1-ppm/material.h /home/jason/hw1-ppm/quad.h
+ /usr/include/c++/11/bits/erase_if.h \
+ /home/jason/Wavelet-Noise-in-ray-tracing/hittable_list.h \
+ /home/jason/Wavelet-Noise-in-ray-tracing/texture.h \
+ /home/jason/Wavelet-Noise-in-ray-tracing/perlin.h \
+ /home/jason/Wavelet-Noise-in-ray-tracing/material.h \
+ /home/jason/Wavelet-Noise-in-ray-tracing/quad.h

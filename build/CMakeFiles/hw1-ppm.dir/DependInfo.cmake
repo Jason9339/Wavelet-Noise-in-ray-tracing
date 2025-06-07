@@ -8,7 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/jason/hw1-ppm/main.cpp" "CMakeFiles/hw1-ppm.dir/main.cpp.o" "gcc" "CMakeFiles/hw1-ppm.dir/main.cpp.o.d"
+  "/home/jason/Wavelet-Noise-in-ray-tracing/main.cpp" "CMakeFiles/hw1-ppm.dir/main.cpp.o" "gcc" "CMakeFiles/hw1-ppm.dir/main.cpp.o.d"
   )
 
 # Targets to which this target links.
