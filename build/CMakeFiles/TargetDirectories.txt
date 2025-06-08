@@ -1,3 +1,0 @@
-/home/jason/Wavelet-Noise-in-ray-tracing/build/CMakeFiles/hw1-ppm.dir
-/home/jason/Wavelet-Noise-in-ray-tracing/build/CMakeFiles/edit_cache.dir
-/home/jason/Wavelet-Noise-in-ray-tracing/build/CMakeFiles/rebuild_cache.dir

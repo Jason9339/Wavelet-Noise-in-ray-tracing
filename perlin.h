@@ -15,10 +15,16 @@ inline double perlin_lerp(double t, double a, double b) {
     return a + t * (b - a);
 }
 
-const vec3 grad3[12] = {
+static const vec3 grad3[12] = {
     vec3(1,1,0), vec3(-1,1,0), vec3(1,-1,0), vec3(-1,-1,0),
     vec3(1,0,1), vec3(-1,0,1), vec3(1,0,-1), vec3(-1,0,-1),
     vec3(0,1,1), vec3(0,-1,1), vec3(0,1,-1), vec3(0,-1,-1)
+};
+
+// 2D 梯度向量
+static const vec3 grad2[8] = {
+    vec3(1,1,0), vec3(-1,1,0), vec3(1,-1,0), vec3(-1,-1,0),
+    vec3(1,0,0), vec3(-1,0,0), vec3(0,1,0), vec3(0,-1,0)
 };
 
 inline double grad(int hash, double x, double y, double z) {
@@ -27,13 +33,20 @@ inline double grad(int hash, double x, double y, double z) {
     return g.x() * x + g.y() * y + g.z() * z;
 }
 
+inline double grad_2d(int hash, double x, double y) {
+    int h = hash % 8;
+    const vec3& g = grad2[h];
+    return g.x() * x + g.y() * y;
+}
+
 class perlin {
   public:
-    static const int turbulence_depth = 20;
+    static const int octave = 20;
 
     perlin() {}
 
-    double noise(const point3& p) const {
+    // 3D 噪声函数
+    double noise_3d(const point3& p) const {
         int X = static_cast<int>(std::floor(p.x())) & 255;
         int Y = static_cast<int>(std::floor(p.y())) & 255;
         int Z = static_cast<int>(std::floor(p.z())) & 255;
@@ -65,13 +78,34 @@ class perlin {
         );
     }
 
-    double turbulence_noise(const point3& p) const {
+    // 2D 噪声函数
+    double noise_2d(double px, double py) const {
+        int X = static_cast<int>(std::floor(px)) & 255;
+        int Y = static_cast<int>(std::floor(py)) & 255;
+
+        double x = px - std::floor(px);
+        double y = py - std::floor(py);
+
+        double u = perlin_fade(x);
+        double v = perlin_fade(y);
+
+        int A = (perm[X] + Y) & 255;
+        int B = (perm[X + 1] + Y) & 255;
+
+        return perlin_lerp(v,
+            perlin_lerp(u, grad_2d(perm[A], x, y), grad_2d(perm[B], x - 1, y)),
+            perlin_lerp(u, grad_2d(perm[A + 1], x, y - 1), grad_2d(perm[B + 1], x - 1, y - 1))
+        );
+    }
+
+    // 3D 分形噪声
+    double fractal_noise_3d(const point3& p) const {
         double accum = 0.0;
         point3 temp_p = p;
         double weight = 1.0;
 
-        for (int i = 0; i < turbulence_depth; i++) {
-            accum += weight * noise(temp_p);
+        for (int i = 0; i < octave; i++) {
+            accum += weight * noise_3d(temp_p);
             temp_p *= 2.0;
             weight *= 0.5;
         }
@@ -79,11 +113,37 @@ class perlin {
         return accum;
     }
 
+    // 2D 分形噪声
+    double fractal_noise_2d(double px, double py) const {
+        double accum = 0.0;
+        double temp_x = px;
+        double temp_y = py;
+        double weight = 1.0;
+
+        for (int i = 0; i < octave; i++) {
+            accum += weight * noise_2d(temp_x, temp_y);
+            temp_x *= 2.0;
+            temp_y *= 2.0;
+            weight *= 0.5;
+        }
+
+        return accum;
+    }
+
+    // 為了向後兼容，保留舊的函數名稱（委託給新的 _3d 版本）
+    double noise(const point3& p) const {
+        return noise_3d(p);
+    }
+
+    double fractal_noise(const point3& p) const {
+        return fractal_noise_3d(p);
+    }
+
   private:
     static const int perm[512];
 };
 
-const int perlin::perm[512] = {
+inline const int perlin::perm[512] = {
     151,160,137,91,90,15,131,13,201,95,96,53,194,233,7,225,
     140,36,103,30,69,142,8,99,37,240,21,10,23,190,6,148,
     247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,

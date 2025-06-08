@@ -9,6 +9,10 @@
 // along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 //==============================================================================================
 
+#include <limits>
+
+// Use infinity from rtweekend.h (declared later during inclusion)
+extern const double infinity;
 
 class interval {
   public:
@@ -50,14 +54,14 @@ class interval {
     static const interval empty, universe;
 };
 
-const interval interval::empty    = interval(+infinity, -infinity);
-const interval interval::universe = interval(-infinity, +infinity);
+inline const interval interval::empty    = interval(+infinity, -infinity);
+inline const interval interval::universe = interval(-infinity, +infinity);
 
-interval operator+(const interval& ival, double displacement) {
+inline interval operator+(const interval& ival, double displacement) {
     return interval(ival.min + displacement, ival.max + displacement);
 }
 
-interval operator+(double displacement, const interval& ival) {
+inline interval operator+(double displacement, const interval& ival) {
     return ival + displacement;
 }
 

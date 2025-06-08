@@ -46,7 +46,7 @@ class noise_texture : public texture {
 
     color value(double u, double v, const point3& p) const override {
         // 對球體總是使用3D世界坐標，避免UV接縫問題
-        double n = noise.turbulence_noise((p + vec3(100.123, 0.456, 87.789)) * scale);
+        double n = noise.fractal_noise((p + vec3(100.123, 0.456, 87.789)) * scale);
         n = 0.5 + 0.5 * n;
         n = std::clamp(n, 0.0, 1.0);
         return color(n, n, n);

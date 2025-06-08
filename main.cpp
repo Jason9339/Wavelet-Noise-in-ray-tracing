@@ -16,10 +16,10 @@
 #include "material.h"
 #include "quad.h"
 #include "perlin.h"
+#include "noise_utils.h"
 
 using namespace std;
 
-// 类型别名
 using point3 = vec3;
 
 inline double clamp(double x, double min, double max) {
@@ -30,73 +30,18 @@ inline double clamp(double x, double min, double max) {
 
 const int MAX_DEPTH = 10; // 最多遞迴深度
 
-void generate_noise_2d_map() {
-    perlin noise;
-
-    // 圖像與世界座標設定
-    int map_width = 512;
-    int map_height = 512;
-    double y_plane = -0.5;
-    double scale = 1.0; // 用來控制每個格子的尺寸（越小越平滑）
-
-    cout << "正在生成 " << map_width << "x" << map_height << " 的2D噪聲灰度圖..." << endl;
-    cout << "採樣平面: y = " << y_plane << endl;
-    cout << "縮放因子: " << scale << endl;
-
-    vector<unsigned char> noise_image(map_width * map_height * 3);
-
-    double min_val = 1.0, max_val = 0.0; // 用來觀察實際值範圍（debug用）
-
-    for (int j = 0; j < map_height; ++j) {
-        for (int i = 0; i < map_width; ++i) {
-            double x = ((double(i) / map_width) - 0.5) * 20.0;
-            double z = ((double(j) / map_height) - 0.5) * 20.0;
-            point3 p(x, y_plane, z);
-
-            // --- 選擇要顯示的 noise 形式 ---
-            // double raw = noise.noise((p + vec3(100.123, 0.456, 87.789)) * scale);              // 原始 Perlin noise，範圍大致在 [-1,1]
-            double raw = noise.turbulence_noise((p + vec3(100.123, 0.456, 87.789)) * scale); // 使用 turbulence 模式
-            double n = 0.5 + 0.5 * raw;                        // 映射到 [0,1]
-
-            
-
-            n = clamp(n, 0.0, 1.0);
-
-            min_val = std::min(min_val, n);
-            max_val = std::max(max_val, n);
-
-            int gray = static_cast<int>(n * 255.0);
-            int idx = (j * map_width + i) * 3;
-            noise_image[idx + 0] = gray;
-            noise_image[idx + 1] = gray;
-            noise_image[idx + 2] = gray;
-        }
-    }
-
-    cout << "灰階值範圍（已歸一化）: [" << min_val << ", " << max_val << "]" << endl;
-
-    if (stbi_write_png("../noise_2d_map.png", map_width, map_height, 3, noise_image.data(), map_width * 3)) {
-        cout << "2D噪聲灰度圖已保存為: ../noise_2d_map.png" << endl;
-    } else {
-        cout << "保存2D噪聲灰度圖失敗！" << endl;
-    }
-
-    cout << "------------------------" << endl;
-}
-
-
-void test_turbulence_noise_range() {
+void test_fractal_noise_range() {
     perlin noise;
     double min_val = 1000.0;
     double max_val = -1000.0;
     
-    cout << "測試 turbulence_noise 輸出值範圍..." << endl;
+    cout << "測試 fractal_noise 輸出值範圍..." << endl;
     
     for (int i = 0; i < 100; i++) {
         for (int j = 0; j < 100; j++) {
             for (int k = 0; k < 100; k++) {
                 point3 test_point(i * 0.1, j * 0.1, k * 0.1);
-                double val = noise.turbulence_noise(test_point);
+                double val = noise.fractal_noise(test_point);
                 
                 if (val < min_val) min_val = val;
                 if (val > max_val) max_val = val;
@@ -104,7 +49,7 @@ void test_turbulence_noise_range() {
         }
     }
     
-    cout << "turbulence_noise 值範圍:" << endl;
+    cout << "fractal_noise 值範圍:" << endl;
     cout << "最小值: " << min_val << endl;
     cout << "最大值: " << max_val << endl;
     cout << "範圍: [" << min_val << ", " << max_val << "]" << endl;
@@ -134,10 +79,9 @@ vec3 trace(const ray& r, const hittable_list& world, int step, int max_step) {
     return rec_nearest.mat->emitted(rec_nearest.u, rec_nearest.v, rec_nearest.p);
 }
 
-
 int main() {
-    test_turbulence_noise_range();
-    generate_noise_2d_map();
+    // 測試噪聲範圍
+    test_fractal_noise_range();
     
     int width = 1000;
     int height = 500;
@@ -151,9 +95,6 @@ int main() {
 
     vec3 horizontal(4, 0, 0);
     vec3 vertical(0, 2, 0);
-
-	// vec3 window_norm = unit_vector(cross(horizontal, vertical));
-	// vec3 origin = ((lower_left_corner + horizontal + vertical)/2) + window_norm*3;
 
 	cout << "origin : " << origin.x() << " " << origin.y() << " " << origin.z() << endl ;
 
@@ -172,8 +113,6 @@ int main() {
       
     // 創建球體（使用材質）  
     hittable_list world;  
-    // world.add(make_shared<sphere>(vec3(0, -100.5, -2), 100, ground_material));  
-    // world.add(make_shared<sphere>(vec3(0, -100.5, -2), 100, noise_material)); 
     
     // 創建水平平面作為地面（替代大球）
     auto ground_quad = make_shared<quad>(
@@ -183,10 +122,6 @@ int main() {
         noise_material           // 使用 noise 材質
     );
     world.add(ground_quad);
-    
-    // world.add(make_shared<sphere>(vec3(0, 0, -2), 0.5, material1));  
-    // world.add(make_shared<sphere>(vec3(1, 0, -1.75), 0.5, material2));  
-    // world.add(make_shared<sphere>(vec3(-1, 0, -2.25), 0.5, material3));
     
     // 添加光源球體（參考您原本的光源位置 -10, 10, 0）
     world.add(make_shared<sphere>(vec3(-5, 5, 0), 0.8, light_material));
