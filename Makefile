@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -O3 -Wall -Wextra
+CXXFLAGS = -std=c++17 -O3 -Wall -Wextra -Wno-missing-field-initializers -Wno-unused-parameter
 INCLUDES = -I.
 
 # 預設目標
