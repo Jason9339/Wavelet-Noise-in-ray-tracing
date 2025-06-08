@@ -1,0 +1,27 @@
+# Build artifacts
+*.o
+main
+main.exe
+test_noise
+*.exe
+
+# Generated images
+*.png
+*.ppm
+
+# Temporary files
+*.log
+*.tmp
+*.cache
+
+# Python/Jupyter
+__pycache__/
+*.py[cod]
+*.ipynb_checkpoints/
+
+# Node modules
+node_modules/
+
+# Mac/Windows junk
+.DS_Store
+Thumbs.db
