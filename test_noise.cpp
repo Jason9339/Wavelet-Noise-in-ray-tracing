@@ -34,7 +34,7 @@ int main() {
     generate_noise_2d_image(256, 256, 4.0, 20.0, "result/perlin_2d_hf_05.png");
 
     std::cout << "\n\n=== 生成 Wavelet 噪聲圖像 ===" << std::endl;
-    int tile_s = 32; // Default tile size for wavelet noise generators
+    int tile_s = 128; // Default tile size for wavelet noise generators
 
     // 6. 純 2D Wavelet 噪聲 (Figure 8d style)
     std::cout << "\n6. 生成純 2D Wavelet 噪聲..." << std::endl;
