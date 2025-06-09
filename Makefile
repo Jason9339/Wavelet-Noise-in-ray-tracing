@@ -6,8 +6,8 @@ INCLUDES = -I.
 all: test_noise main
 
 # 編譯噪聲測試程序
-test_noise: test_noise.cpp noise_utils.cpp perlin.h vec3.h rtweekend.h stb_image_write.h noise_utils.h
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -o test_noise test_noise.cpp noise_utils.cpp
+test_noise: test_noise.cpp noise_utils.cpp wavelet_noise.cpp wavelet_noise_2d.cpp perlin.h wavelet_noise.h wavelet_noise_2d.h vec3.h rtweekend.h stb_image_write.h noise_utils.h
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o test_noise test_noise.cpp noise_utils.cpp wavelet_noise.cpp wavelet_noise_2d.cpp
 
 # 編譯主程序（光線追踪器）
 main: main.cpp perlin.h vec3.h rtweekend.h stb_image_write.h texture.h material.h sphere.h hittable.h hittable_list.h quad.h ray.h interval.h color.h aabb.h

@@ -129,7 +129,7 @@ int main() {
     // 添加 noise texture 球體
     world.add(make_shared<sphere>(vec3(1, 0, -1.75), 0.5, noise_material));  
 
-    ofstream file("../raytrace.ppm");
+    ofstream file("result/raytrace.ppm");
     file << "P3\n" << width << " " << height << "\n255\n";
 	cout << "Processing" << endl;
     for (int j = height - 1; j >= 0; --j) {
@@ -157,7 +157,7 @@ int main() {
             image[index + 2] = b;
         }
     }
-    stbi_write_png("../raytrace.png", width, height, 3, image.data(), width * 3);
+    stbi_write_png("result/raytrace.png", width, height, 3, image.data(), width * 3);
 	cout << "End" << endl;
 
     return 0;

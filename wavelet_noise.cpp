@@ -1,4 +1,5 @@
 #include "wavelet_noise.h"
+#include "rtweekend.h"
 #include <iostream> // For debugging
 
 // Initialize static const members
@@ -44,7 +45,7 @@ void wavelet_noise::Downsample(const std::vector<double>& from_data, std::vector
     // The 'from' in the paper's C code is the full 3D tile, and 'stride' selects row/col/depth.
     // Here, 'from_data' *is* the full 3D tile. 'current_tile_slice_start' points to the start of the 1D slice.
     
-    int to_idx = 0; // Index into to_data (which is just for this slice's result)
+    // int to_idx = 0; // Index into to_data (which is just for this slice's result)
     for (int i = 0; i < n_elements / 2; ++i) {
         double sum = 0.0;
         for (int k_filter = 0; k_filter < 2 * ARAD; ++k_filter) { // Iterate through filter coeffs
@@ -143,7 +144,7 @@ void wavelet_noise::GenerateNoiseTile(int n, int olap) {
     std::vector<double> temp1(sz);
     std::vector<double> temp2(sz);
 
-    std::mt19937 gen(rtweekend::random_int(0,100000)); // Seed with a random int
+    std::mt19937 gen(random_int(0,100000)); // Seed with a random int
 
     // Step 1: Fill the tile with random numbers
     for (int i = 0; i < sz; ++i) {
@@ -482,6 +483,12 @@ double wavelet_noise::noise_3d(const point3& p) const {
     // or just WNoise applied to p without further scaling.
     // Let's make it WNoise on p directly, assuming p is already at the desired scale.
     return WNoise(p);
+}
+
+double wavelet_noise::projected_noise_3d(const point3& p, const vec3& normal) const {
+    // Single-band projected 3D noise
+    vec3 n_unit = unit_vector(normal);
+    return WProjectedNoise(p, n_unit);
 }
 
 double wavelet_noise::fractal_noise_3d(const point3& p, int octaves, double persistence) const {
