@@ -1,7 +1,3 @@
-// wavelet_noise.cpp
-// Complete implementation of "Wavelet Noise" (Cook & DeRose, 2005)
-// 完整實現論文中的所有算法，包括3D噪音、投影等
-
 #include <iostream>
 #include <vector>
 #include <cmath>
@@ -10,6 +6,8 @@
 #include <algorithm>
 #include <complex>
 #include <cstring>
+#include <numeric> // For std::accumulate
+#include <limits>  // For std::numeric_limits
 
 // ===== BMP 檔案輸出工具 =====
 #pragma pack(push, 1)
@@ -34,29 +32,48 @@ struct BMPHeader {
 #pragma pack(pop)
 
 void saveBMP(const std::string& filename, const std::vector<std::vector<float>>& data) {
+    if (data.empty() || data[0].empty()) {
+        std::cerr << "Error: Empty data for saveBMP: " << filename << std::endl;
+        return;
+    }
     int width = data[0].size();
     int height = data.size();
     
     BMPHeader header;
     header.width = width;
     header.height = height;
-    header.size = 54 + 3 * width * height;
+    // Calculate image_size carefully to avoid overflow with large dimensions
+    // Each pixel is 3 bytes. Row size needs padding to multiple of 4.
+    int row_stride = (width * 3 + 3) & ~3;
+    header.image_size = row_stride * height;
+    header.size = header.offset + header.image_size;
     
     std::ofstream file(filename, std::ios::binary);
+    if (!file.is_open()) {
+        std::cerr << "Error: Could not open file for writing: " << filename << std::endl;
+        return;
+    }
     file.write(reinterpret_cast<char*>(&header), sizeof(header));
     
+    std::vector<uint8_t> row_buffer(row_stride);
     for (int y = height - 1; y >= 0; y--) {
         for (int x = 0; x < width; x++) {
-            uint8_t value = static_cast<uint8_t>(std::max(0.0f, std::min(255.0f, (data[y][x] + 1.0f) * 127.5f)));
-            file.write(reinterpret_cast<char*>(&value), 1); // B
-            file.write(reinterpret_cast<char*>(&value), 1); // G
-            file.write(reinterpret_cast<char*>(&value), 1); // R
+            // Clamp data[y][x] to avoid issues if it's NaN or Inf before normalization
+            float val = data[y][x];
+            if (std::isnan(val) || std::isinf(val)) {
+                // std::cerr << "Warning: NaN or Inf found in data for saveBMP at (" << x << "," << y << ") in " << filename << ". Setting to 0." << std::endl;
+                val = 0.0f; // Replace NaN/Inf with a neutral value
+            }
+            uint8_t value = static_cast<uint8_t>(std::max(0.0f, std::min(255.0f, (val + 1.0f) * 127.5f)));
+            row_buffer[x * 3 + 0] = value; // B
+            row_buffer[x * 3 + 1] = value; // G
+            row_buffer[x * 3 + 2] = value; // R
         }
-        int padding = (4 - (width * 3) % 4) % 4;
-        for (int i = 0; i < padding; i++) {
-            uint8_t pad = 0;
-            file.write(reinterpret_cast<char*>(&pad), 1);
+        // Padding already handled by row_stride, but ensure buffer is zeroed if needed
+        for (int i = width * 3; i < row_stride; ++i) {
+            row_buffer[i] = 0;
         }
+        file.write(reinterpret_cast<char*>(row_buffer.data()), row_stride);
     }
     
     file.close();
@@ -65,6 +82,11 @@ void saveBMP(const std::string& filename, const std::vector<std::vector<float>>&
 
 // ===== 數學工具函數 =====
 inline int Mod(int x, int n) {
+    if (n == 0) {
+        std::cerr << "Error: Modulo by zero (n=0)." << std::endl;
+        return 0; 
+    }
+    if (n < 0) n = -n; // Ensure n is positive for modulo
     int m = x % n;
     return (m < 0) ? m + n : m;
 }
@@ -73,146 +95,375 @@ inline int Mod(int x, int n) {
 float gaussianNoise() {
     static std::random_device rd;
     static std::mt19937 gen(rd());
-    static std::normal_distribution<float> dist(0.0f, 1.0f);
+    static std::normal_distribution<float> dist(0.0f, 1.0f); // Mean 0, stddev 1
     return dist(gen);
 }
 
-// ===== 完整的 Wavelet Noise 實現（基於論文附錄） =====
+// ===== FFT 實現 (假設不變) =====
+using Complex = std::complex<float>;
+void fft1D(std::vector<Complex>& a, bool invert); // Declaration
+void fft2D(const std::vector<std::vector<float>>& input, std::vector<std::vector<Complex>>& output); // Declaration
+void saveSpectrum(const std::string& filename, const std::vector<std::vector<Complex>>& spectrum); // Declaration
+
+
+// ===== 協助函數：計算統計數據 =====
+struct DataStats {
+    float avg = 0.0f;
+    float var = 0.0f;
+    float min_val = std::numeric_limits<float>::max();
+    float max_val = std::numeric_limits<float>::lowest();
+    long long count_nan_inf = 0;
+};
+
+DataStats calculateStats(const float* data, long long total_size, const std::string& name) {
+    DataStats stats;
+    if (total_size == 0) {
+        std::cerr << "Warning: Calculating stats for zero-sized data: " << name << std::endl;
+        return stats;
+    }
+
+    double sum = 0.0;
+    double sum_sq = 0.0;
+    long long valid_count = 0;
+
+    for (long long i = 0; i < total_size; ++i) {
+        float val = data[i];
+        if (std::isnan(val) || std::isinf(val)) {
+            stats.count_nan_inf++;
+            continue;
+        }
+        valid_count++;
+        sum += val;
+        sum_sq += static_cast<double>(val) * val; // Use double for sum_sq to avoid precision loss
+        if (val < stats.min_val) stats.min_val = val;
+        if (val > stats.max_val) stats.max_val = val;
+        }
+
+    if (valid_count > 0) {
+        stats.avg = static_cast<float>(sum / valid_count);
+        // Variance = E[X^2] - (E[X])^2
+        stats.var = static_cast<float>((sum_sq / valid_count) - static_cast<double>(stats.avg) * stats.avg);
+    } else {
+        std::cerr << "Warning: No valid data points to calculate stats for: " << name << std::endl;
+        stats.min_val = 0; // Default if no valid points
+        stats.max_val = 0;
+    }
+
+
+    std::cout << name << " stats: avg=" << stats.avg
+              << " var=" << stats.var
+              << " stddev=" << (stats.var > 0 ? sqrt(stats.var) : 0) // stddev is sqrt(variance)
+              << " min=" << stats.min_val
+              << " max=" << stats.max_val;
+    if (stats.count_nan_inf > 0) {
+        std::cout << " (NaN/Inf count: " << stats.count_nan_inf << ")";
+        }
+    std::cout << std::endl;
+    return stats;
+}
+
+
+// ===== 協助函數：從 3D tile 中提取一個 2D XY 切片並保存為 BMP =====
+void saveTileSlice(const std::string& filename_prefix, int slice_z, const float* tile_data, int n) {
+    if (!tile_data) {
+        std::cerr << "Error: tile_data is null for saveTileSlice: " << filename_prefix << std::endl;
+        return;
+    }
+    if (n <= 0) {
+        std::cerr << "Error: n=" << n << " is invalid for saveTileSlice: " << filename_prefix << std::endl;
+        return;
+    }
+    if (slice_z < 0 || slice_z >= n) {
+        std::cerr << "Error: Slice_z=" << slice_z <<" out of bounds [0," << n-1 << "] for saveTileSlice: " << filename_prefix << std::endl;
+        return;
+    }
+
+    std::vector<std::vector<float>> slice_image(n, std::vector<float>(n));
+    float current_min_val = std::numeric_limits<float>::max();
+    float current_max_val = std::numeric_limits<float>::lowest();
+    bool all_same = true;
+    float first_val = 0.0f; // Placeholder if all_same is true
+
+    for (int y = 0; y < n; ++y) {
+        for (int x = 0; x < n; ++x) {
+            long long index = static_cast<long long>(x) + static_cast<long long>(y) * n + static_cast<long long>(slice_z) * n * n;
+            // Bounds check for safety, though slice_z check should cover most
+            if (index >= static_cast<long long>(n)*n*n) {
+                 std::cerr << "Error: Index out of bounds in saveTileSlice inner loop." << std::endl;
+                 slice_image[y][x] = 0.0f; // Default error value
+                 continue;
+            }
+            float val = tile_data[index];
+            slice_image[y][x] = val;
+
+            if (std::isnan(val) || std::isinf(val)) continue; // Skip NaN/Inf for min/max calculation
+
+            if (y == 0 && x == 0) first_val = val;
+            else if (std::abs(val - first_val) > 1e-6f) all_same = false;
+
+            if (val < current_min_val) current_min_val = val;
+            if (val > current_max_val) current_max_val = val;
+        }
+    }
+    
+    // Normalize for visualization if there's a valid range
+    if (!all_same && (current_max_val - current_min_val > 1e-6f) && std::isfinite(current_min_val) && std::isfinite(current_max_val) ) {
+        for(int y=0; y<n; ++y) for(int x=0; x<n; ++x) {
+            if (std::isfinite(slice_image[y][x])) { // Only normalize finite values
+                 slice_image[y][x] = 2.0f * (slice_image[y][x] - current_min_val) / (current_max_val - current_min_val) - 1.0f;
+            } else {
+                 slice_image[y][x] = 0.0f; // Set NaN/Inf to neutral for image
+            }
+        }
+    } else { // If all values are same or range is too small, or non-finite min/max
+         for(int y=0; y<n; ++y) for(int x=0; x<n; ++x) {
+            slice_image[y][x] = 0.0f; // Center value if all same or problematic range
+         }
+    }
+
+    saveBMP(filename_prefix + "_slice_z" + std::to_string(slice_z) + ".bmp", slice_image);
+
+    // Also save spectrum
+    std::vector<std::vector<Complex>> spectrum_data; // Renamed to avoid conflict
+    if (n > 0 && (n & (n - 1)) == 0) { 
+        fft2D(slice_image, spectrum_data);
+        saveSpectrum(filename_prefix + "_slice_z" + std::to_string(slice_z) + "_spectrum.bmp", spectrum_data);
+    } else if (n > 0) { // Only print if n > 0
+        std::cout << "Skipping spectrum for " << filename_prefix << " because size " << n << " is not a power of 2." << std::endl;
+    }
+}
+
+// ===== Wavelet Noise 實現 =====
 class WaveletNoise {
 private:
-    static float* noiseTileData;
-    static int noiseTileSize;
-    
-    // 下採樣係數（論文附錄1）
     static constexpr int ARAD = 16;
     
 public:
-    static void GenerateNoiseTile(int n, int olap = 0) {
-        if (n % 2) n++; // tile size must be even
-        
-        int sz = n * n * n * sizeof(float);
-        float* temp1 = (float*)malloc(sz);
-        float* temp2 = (float*)malloc(sz);
-        float* noise = (float*)malloc(sz);
-        
-        // Step 1. Fill the tile with random numbers in the range -1 to 1
-        for (int i = 0; i < n * n * n; i++) {
-            noise[i] = gaussianNoise();
+    static float* noiseTileData;
+    static int noiseTileSize;
+
+    static void GenerateNoiseTile(int n, int /*olap*/ = 0) {
+        if (n <= 0) {
+            std::cerr << "Error: GenerateNoiseTile called with n=" << n << ". Must be > 0." << std::endl;
+            noiseTileData = nullptr;
+            noiseTileSize = 0;
+            return;
+        }
+        if (n % 2) n++; 
+        noiseTileSize = n; 
+
+        long long num_elements = static_cast<long long>(n) * n * n;
+        size_t sz_bytes = num_elements * sizeof(float);
+
+        float* temp1 = (float*)malloc(sz_bytes);
+        float* temp2 = (float*)malloc(sz_bytes); 
+        float* r_initial = (float*)malloc(sz_bytes); 
+        float* noise_buffer = (float*)malloc(sz_bytes); // Renamed from 'noise' to avoid confusion with class member
+
+        if (!temp1 || !temp2 || !r_initial || !noise_buffer) {
+            std::cerr << "Error: Memory allocation failed in GenerateNoiseTile." << std::endl;
+            free(temp1); free(temp2); free(r_initial); free(noise_buffer);
+            noiseTileData = nullptr; noiseTileSize = 0;
+            return;
         }
         
-        // Steps 2 and 3. Downsample and upsample the tile
-        // Each x row
+        // Step 1. Fill with random numbers (R)
+        for (long long i = 0; i < num_elements; i++) {
+            r_initial[i] = gaussianNoise();
+        }
+        std::cout << "--- Stats for R_initial ---" << std::endl;
+        calculateStats(r_initial, num_elements, "R_initial");
+        saveTileSlice("debug_R_initial", n / 2, r_initial, n);
+
+        memcpy(noise_buffer, r_initial, sz_bytes); // Start with R for filtering
+        
+        // Steps 2 and 3. Downsample and upsample (R -> R_du)
+        // Result of filtering will be in temp2
+        // First pass (X): input=noise_buffer (R), intermediate=temp1, output=temp2
         for (int iy = 0; iy < n; iy++) {
             for (int iz = 0; iz < n; iz++) {
-                int i = iy * n + iz * n * n;
-                Downsample(&noise[i], &temp1[i], n, 1);
-                Upsample(&temp1[i], &temp2[i], n, 1);
+                long long base_idx = static_cast<long long>(iy) * n + static_cast<long long>(iz) * n * n;
+                Downsample(&noise_buffer[base_idx], &temp1[base_idx], n, 1);
+                Upsample(&temp1[base_idx], &temp2[base_idx], n, 1);
             }
         }
-        
-        // Each y row
+        // Second pass (Y): input=temp2, intermediate=temp1, output=temp2 (overwrite)
         for (int ix = 0; ix < n; ix++) {
             for (int iz = 0; iz < n; iz++) {
-                int i = ix + iz * n * n;
-                Downsample(&temp2[i], &temp1[i], n, n);
-                Upsample(&temp1[i], &temp2[i], n, n);
+                long long base_idx = static_cast<long long>(ix) + static_cast<long long>(iz) * n * n;
+                Downsample(&temp2[base_idx], &temp1[base_idx], n, n); 
+                Upsample(&temp1[base_idx], &temp2[base_idx], n, n);
             }
         }
-        
-        // Each z row
+        // Third pass (Z): input=temp2, intermediate=temp1, output=temp2 (overwrite)
         for (int ix = 0; ix < n; ix++) {
             for (int iy = 0; iy < n; iy++) {
-                int i = ix + iy * n;
-                Downsample(&temp2[i], &temp1[i], n, n * n);
-                Upsample(&temp1[i], &temp2[i], n, n * n);
+                long long base_idx = static_cast<long long>(ix) + static_cast<long long>(iy) * n;
+                Downsample(&temp2[base_idx], &temp1[base_idx], n, n * n);
+                Upsample(&temp1[base_idx], &temp2[base_idx], n, n * n);
             }
         }
-        
-        // Step 4. Subtract out the coarse-scale contribution
-        for (int i = 0; i < n * n * n; i++) {
-            noise[i] -= temp2[i];
+        // temp2 now holds R_down_up
+        std::cout << "--- Stats for R_down_up (in temp2) ---" << std::endl;
+        calculateStats(temp2, num_elements, "R_down_up");
+        saveTileSlice("debug_R_down_up", n / 2, temp2, n);
+
+        // Step 4. Subtract (N = R - R_down_up)
+        // noise_buffer will hold N
+        for (long long i = 0; i < num_elements; i++) {
+            noise_buffer[i] = r_initial[i] - temp2[i]; 
         }
+        std::cout << "--- Stats for N_after_subtract (in noise_buffer) ---" << std::endl;
+        calculateStats(noise_buffer, num_elements, "N_after_subtract");
+        saveTileSlice("debug_N_after_subtract", n / 2, noise_buffer, n);
         
-        // Avoid even/odd variance difference by adding odd-offset version
-        int offset = n / 2;
-        if (offset % 2 == 0) offset++;
+        // Avoid even/odd variance difference
+        int offset_val = n / 2; 
+        if (offset_val % 2 == 0) offset_val++;
         
-        int i = 0;
+        // Use temp1 as temporary storage for N_offset
         for (int ix = 0; ix < n; ix++) {
             for (int iy = 0; iy < n; iy++) {
                 for (int iz = 0; iz < n; iz++) {
-                    temp1[i++] = noise[Mod(ix + offset, n) + 
-                                      Mod(iy + offset, n) * n + 
-                                      Mod(iz + offset, n) * n * n];
+                    long long target_idx = static_cast<long long>(ix) + static_cast<long long>(iy) * n + static_cast<long long>(iz) * n * n;
+                    long long source_idx = static_cast<long long>(Mod(ix + offset_val, n)) + 
+                                           static_cast<long long>(Mod(iy + offset_val, n)) * n + 
+                                           static_cast<long long>(Mod(iz + offset_val, n)) * n * n;
+                    if (source_idx < 0 || source_idx >= num_elements) { // Safety check
+                        std::cerr << "Error: N_offset source_idx out of bounds." << std::endl;
+                        temp1[target_idx] = 0.0f;
+                    } else {
+                         temp1[target_idx] = noise_buffer[source_idx];
+                    }
                 }
             }
         }
         
-        for (int i = 0; i < n * n * n; i++) {
-            noise[i] += temp1[i];
+        for (long long i = 0; i < num_elements; i++) {
+            noise_buffer[i] += temp1[i]; // N_final = N + N_offset
         }
-        
-        noiseTileData = noise;
-        noiseTileSize = n;
-        
+        std::cout << "--- Stats for N_final (in noise_buffer) ---" << std::endl;
+        calculateStats(noise_buffer, num_elements, "N_final");
+        saveTileSlice("debug_N_final", n / 2, noise_buffer, n);
+
+        free(r_initial);
         free(temp1);
         free(temp2);
+        noiseTileData = noise_buffer; // noiseTileData now owns noise_buffer
     }
     
     static void Downsample(float* from, float* to, int n, int stride) {
+        if (!from || !to || n <= 0 || stride <= 0) {
+            std::cerr << "Error: Invalid args to Downsample. n=" << n << ", stride=" << stride << std::endl;
+            // Consider filling 'to' with zeros here to prevent uninitialized data propagation
+            if (to && n > 0 && (n/2 > 0)) { // n/2 output elements
+                for(int i_out = 0; i_out < n/2; ++i_out) {
+                    to[static_cast<long long>(i_out) * stride] = 0.0f;
+                }
+            }
+            return;
+        }
+
+        // ARAD is 16. aCoeffs has 2*ARAD = 32 elements.
+        // Coefficients should use 'f' suffix for float literals.
         float aCoeffs[2*ARAD] = {
-            0.000334,-0.001528, 0.000410, 0.003545,-0.000938,-0.008233, 0.002172, 0.019120,
-            -0.005040,-0.044412, 0.011655, 0.103311,-0.025936,-0.243780, 0.033979, 0.655340,
-            0.655340, 0.033979,-0.243780,-0.025936, 0.103311, 0.011655,-0.044412,-0.005040,
-            0.019120, 0.002172,-0.008233,-0.000938, 0.003546, 0.000410,-0.001528, 0.000334
+            0.000334f,-0.001528f, 0.000410f, 0.003545f,-0.000938f,-0.008233f, 0.002172f, 0.019120f,
+            -0.005040f,-0.044412f, 0.011655f, 0.103311f,-0.025936f,-0.243780f, 0.033979f, 0.655340f,
+            0.655340f, 0.033979f,-0.243780f,-0.025936f, 0.103311f, 0.011655f,-0.044412f,-0.005040f,
+            0.019120f, 0.002172f,-0.008233f,-0.000938f, 0.003546f, 0.000410f,-0.001528f, 0.000334f
         };
-        
-        float* a = &aCoeffs[ARAD];
-        
-        for (int i = 0; i < n/2; i++) {
-            to[i*stride] = 0;
-            for (int k = 2*i - ARAD; k <= 2*i + ARAD; k++) {
-                to[i*stride] += a[k - 2*i] * from[Mod(k, n) * stride];
+        // a_centered points to aCoeffs[ARAD] (i.e., aCoeffs[16]).
+        // Valid relative indices for a_centered: -ARAD to ARAD-1 (i.e., -16 to 15).
+        // These access aCoeffs[0] to aCoeffs[2*ARAD-1] (i.e., aCoeffs[0] to aCoeffs[31]).
+        float* a_centered = &aCoeffs[ARAD];
+
+        for (int i_out = 0; i_out < n / 2; i_out++) { // For each output element 'to[i_out]'
+            long long to_idx = static_cast<long long>(i_out) * stride;
+            to[to_idx] = 0.0f; // Initialize output element
+
+            // The filter tap index for 'a_centered' should range from -ARAD to ARAD-1.
+            // This loop runs 2*ARAD times.
+            for (int k_filter_tap_idx = -ARAD; k_filter_tap_idx < ARAD; ++k_filter_tap_idx) {
+                // 'k_input_original_idx' is the corresponding index in the 'from' array space (like 'k' in paper's formula).
+                // The formula is effectively: to[i_out] = sum_{k_filter_tap_idx} a_centered[k_filter_tap_idx] * from[2*i_out + k_filter_tap_idx]
+                int k_input_original_idx = 2 * i_out + k_filter_tap_idx;
+
+                long long from_idx_in_dimension = Mod(k_input_original_idx, n);
+                long long from_element_absolute_idx = from_idx_in_dimension * stride;
+
+                // Accessing a_centered[k_filter_tap_idx] is now safe.
+                // Accessing from[from_element_absolute_idx] is safe due to Mod(..., n)
+                // (assuming 'from' buffer is allocated correctly for 'n' elements along the dimension with 'stride').
+                to[to_idx] += a_centered[k_filter_tap_idx] * from[from_element_absolute_idx];
             }
         }
     }
     
     static void Upsample(float* from, float* to, int n, int stride) {
+        // ... (Upsample implementation as before, ensure 'from' and 'to' are valid)
+        if (!from || !to || n <= 0 || stride <= 0) {
+            std::cerr << "Error: Invalid args to Upsample." << std::endl;
+            return;
+        }
         float pCoeffs[4] = { 0.25, 0.75, 0.75, 0.25 };
-        float* p = &pCoeffs[2];
-        
+        float* p = &pCoeffs[2]; // Center of pCoeffs for p[i-2k] indexing
         for (int i = 0; i < n; i++) {
-            to[i*stride] = 0;
-            for (int k = i/2; k <= i/2 + 1; k++) {
-                to[i*stride] += p[i - 2*k] * from[Mod(k, n/2) * stride];
+            to[static_cast<long long>(i)*stride] = 0;
+            // Loop k from i/2 to i/2 + 1 (inclusive)
+            // This means k will take on two values for each i.
+            // Example: i=0 -> k=0,1. i=1 -> k=0,1. i=2 -> k=1,2. i=3 -> k=1,2
+            for (int k_offset = 0; k_offset <= 1; ++k_offset) {
+                int k = i/2 + k_offset;
+                int p_idx = i - 2*k; // This will be in range [-2, 1] typically, used to index pCoeffs around its center
+
+                // Ensure p_idx is valid for p (which is &pCoeffs[2])
+                // p[p_idx] means pCoeffs[2 + p_idx]
+                // Valid indices for pCoeffs are 0,1,2,3
+                // So 2+p_idx must be in [0,3] -> p_idx must be in [-2, 1]
+                if (p_idx < -2 || p_idx > 1) { // Corresponds to pCoeffs indices outside 0..3
+                     // This should not happen with correct k loop, but good for sanity
+                    // std::cerr << "Upsample p_idx out of bounds: " << p_idx << std::endl;
+                    continue;
+                }
+                long long from_idx = static_cast<long long>(Mod(k, n/2)) * stride;
+
+                to[static_cast<long long>(i)*stride] += p[p_idx] * from[from_idx];
             }
         }
     }
     
-    // Non-projected 3D noise (論文附錄2)
     static float WNoise(float p[3]) {
-        int i, f[3], c[3], mid[3], n = noiseTileSize;
-        float w[3][3], t, result = 0;
-        
-        // Evaluate quadratic B-spline basis functions
-        for (i = 0; i < 3; i++) {
-            mid[i] = ceil(p[i] - 0.5);
-            t = mid[i] - (p[i] - 0.5);
-            w[i][0] = t * t / 2;
-            w[i][2] = (1 - t) * (1 - t) / 2;
-            w[i][1] = 1 - w[i][0] - w[i][2];
+        // ... (WNoise implementation as before, check noiseTileSize and noiseTileData)
+        int n = noiseTileSize;
+        if (n == 0 || noiseTileData == nullptr) {
+            // std::cerr << "Error: WNoise called with uninitialized tile (size=" << n << ")." << std::endl;
+            return 0.0f; 
         }
-        
-        // Evaluate noise by weighting noise coefficients by basis function values
+        int i, f[3], mid[3];
+        float w[3][3], t, result = 0;
+        for (i = 0; i < 3; i++) {
+            mid[i] = ceil(p[i] - 0.5f); // ensure float literal
+            t = mid[i] - (p[i] - 0.5f);
+            w[i][0] = t * t / 2.0f;
+            w[i][2] = (1.0f - t) * (1.0f - t) / 2.0f;
+            w[i][1] = 1.0f - w[i][0] - w[i][2];
+        }
         for (f[2] = -1; f[2] <= 1; f[2]++) {
             for (f[1] = -1; f[1] <= 1; f[1]++) {
                 for (f[0] = -1; f[0] <= 1; f[0]++) {
-                    float weight = 1;
+                    float weight = 1.0f;
+                    long long N_sq = static_cast<long long>(n)*n;
+                    long long current_c[3]; // Use long long for intermediate index calculation
                     for (i = 0; i < 3; i++) {
-                        c[i] = Mod(mid[i] + f[i], n);
+                        current_c[i] = Mod(mid[i] + f[i], n);
                         weight *= w[i][f[i] + 1];
                     }
-                    result += weight * noiseTileData[c[2] * n * n + c[1] * n + c[0]];
+                    long long final_idx = current_c[0] + current_c[1] * n + current_c[2] * N_sq;
+                    if (final_idx < 0 || final_idx >= N_sq * n) { // Safety check
+                        // std::cerr << "Error: WNoise final_idx out of bounds." << std::endl;
+                        continue;
+                    }
+                    result += weight * noiseTileData[final_idx];
                 }
             }
         }
@@ -220,72 +471,91 @@ public:
         return result;
     }
     
+    // ... (WProjectedNoise, MultibandNoise, Noise2D, MultibandNoise2D as before) ...
     // 3D noise projected onto 2D (論文附錄2)
     static float WProjectedNoise(float p[3], float normal[3]) {
-        int i, c[3], min[3], max[3], n = noiseTileSize;
+        int n = noiseTileSize;
+         if (n == 0 || noiseTileData == nullptr) return 0.0f;
+        int i, c[3], min_coord[3], max_coord[3]; // Renamed min/max to avoid conflict
         float support, result = 0;
         
-        // Bound the support of the basis functions for this projection direction
         for (i = 0; i < 3; i++) {
-            support = 3 * fabs(normal[i]) + 3 * sqrt((1 - normal[i] * normal[i]) / 2);
-            min[i] = ceil(p[i] - support);
-            max[i] = floor(p[i] + support);
+            support = 3.0f * std::abs(normal[i]) + 3.0f * std::sqrt((1.0f - normal[i] * normal[i]) / 2.0f);
+            min_coord[i] = static_cast<int>(std::ceil(p[i] - support));
+            max_coord[i] = static_cast<int>(std::floor(p[i] + support));
         }
         
-        // Loop over the noise coefficients within the bound
-        for (c[2] = min[2]; c[2] <= max[2]; c[2]++) {
-            for (c[1] = min[1]; c[1] <= max[1]; c[1]++) {
-                for (c[0] = min[0]; c[0] <= max[0]; c[0]++) {
+        for (c[2] = min_coord[2]; c[2] <= max_coord[2]; c[2]++) {
+            for (c[1] = min_coord[1]; c[1] <= max_coord[1]; c[1]++) {
+                for (c[0] = min_coord[0]; c[0] <= max_coord[0]; c[0]++) {
                     float t, t1, t2, t3, dot = 0, weight = 1;
-                    
-                    // Dot the normal with the vector from c to p
                     for (i = 0; i < 3; i++) {
                         dot += normal[i] * (p[i] - c[i]);
                     }
-                    
-                    // Evaluate the basis function at c moved halfway to p along the normal
                     for (i = 0; i < 3; i++) {
-                        t = (c[i] + normal[i] * dot / 2) - (p[i] - 1.5);
-                        t1 = t - 1;
-                        t2 = 2 - t;
-                        t3 = 3 - t;
-                        weight *= (t <= 0 || t >= 3) ? 0 : 
-                                 (t < 1) ? t * t / 2 : 
-                                 (t < 2) ? 1 - (t1 * t1 + t2 * t2) / 2 : 
-                                 t3 * t3 / 2;
+                        t = (c[i] + normal[i] * dot / 2.0f) - (p[i] - 1.5f);
+                        t1 = t - 1.0f;
+                        t2 = 2.0f - t;
+                        t3 = 3.0f - t;
+                        weight *= (t <= 0 || t >= 3.0f) ? 0.0f : 
+                                 (t < 1.0f) ? t * t / 2.0f : 
+                                 (t < 2.0f) ? 1.0f - (t1 * t1 + t2 * t2) / 2.0f : 
+                                 t3 * t3 / 2.0f;
                     }
-                    
-                    // Evaluate noise by weighting noise coefficients by basis function values
-                    result += weight * noiseTileData[Mod(c[2], n) * n * n + 
-                                                   Mod(c[1], n) * n + 
-                                                   Mod(c[0], n)];
+                    long long N_sq = static_cast<long long>(n)*n;
+                    result += weight * noiseTileData[Mod(c[2], n) * N_sq + Mod(c[1], n) * n + Mod(c[0], n)];
                 }
             }
         }
-        
         return result;
     }
     
     // Multiband noise (論文附錄2)
-    static float WMultibandNoise(float p[3], float s, float* normal, 
-                                int firstBand, int nbands, float* w) {
-        float q[3], result = 0, variance = 0;
+    static float WMultibandNoise(float p_world[3], float s, float* normal, 
+                                int firstBand, int nbands, float* w_weights) { // Renamed p to p_world, w to w_weights
+        if (noiseTileSize == 0 || noiseTileData == nullptr) return 0.0f;
+        float q_param[3], result = 0, variance_sum = 0; // Renamed q to q_param, variance to variance_sum
         int i, b;
         
-        for (b = 0; b < nbands && s + firstBand + b < 0; b++) {
-            for (i = 0; i <= 2; i++) {
-                q[i] = 2 * p[i] * pow(2, firstBand + b);
+        // Corrected loop condition and q calculation based on N(scale*p_world)
+        for (b = 0; b < nbands; b++) {
+            int current_band_j = firstBand + b;
+            if (s + current_band_j >= 0 && nbands > 1) { // Only skip if s makes j too high, and more than one band requested
+                 // For a single band request (nbands=1), always compute it regardless of j
+                 // This aligns with how generateSingleBandDiagnostic calls WNoise directly
+                 if (nbands == 1 && current_band_j >=0 ) {} // Allow if nbands=1
+                 else continue; 
             }
-            result += (normal) ? w[b] * WProjectedNoise(q, normal) : w[b] * WNoise(q);
+
+            float scale = std::pow(2.0f, current_band_j);
+            for (i = 0; i <= 2; i++) {
+                q_param[i] = p_world[i] * scale; // N(scale * p_world) -> pass (scale * p_world) to WNoise
+            }
+            
+            float band_noise = (normal) ? w_weights[b] * WProjectedNoise(q_param, normal) 
+                                       : w_weights[b] * WNoise(q_param);
+            if (std::isfinite(band_noise)) { // Add only finite contributions
+                result += band_noise;
+            }
         }
         
         for (b = 0; b < nbands; b++) {
-            variance += w[b] * w[b];
+            variance_sum += w_weights[b] * w_weights[b];
         }
         
-        // Adjust the noise so it has a variance of 1
-        if (variance) {
-            result /= sqrt(variance * ((normal) ? 0.296 : 0.210));
+        if (variance_sum > 1e-9f) { // Avoid division by zero or very small variance
+            float norm_factor_sq = variance_sum * ((normal) ? 0.296f : 0.210f); //論文提的常數
+            if (norm_factor_sq > 1e-9f) {
+                 if (std::isfinite(result)) { // Only normalize if result is finite
+                    result /= std::sqrt(norm_factor_sq);
+                 } else {
+                    // std::cerr << "Warning: Non-finite result before variance normalization." << std::endl;
+                    result = 0.0f; // Reset if result became non-finite
+                 }
+            }
+        } else if (nbands > 0 && variance_sum <= 1e-9f) {
+            // If variance is zero (e.g. all weights are zero), result should be zero
+            result = 0.0f;
         }
         
         return result;
@@ -293,13 +563,62 @@ public:
     
     // 2D convenience functions
     static float Noise2D(float x, float y) {
-        float p[3] = {x, y, 0.5f};
+        float p[3] = {x, y, 0.5f}; // z can be any constant for 2D
         return WNoise(p);
     }
     
     static float MultibandNoise2D(float x, float y, int nbands, float* weights) {
         float p[3] = {x, y, 0.5f};
-        return WMultibandNoise(p, 0, nullptr, -nbands+1, nbands, weights);
+         // For typical fractal noise, firstBand is often 0 or negative.
+         // If bands are 0, 1, 2, ..., then firstBand = 0.
+         // If bands are ..., -2, -1, 0, then firstBand = some_negative_value.
+         // Paper's M(x) = sum w_b N(2^b x), where b=b_min...b_max.
+         // If we want b to go from 0 to nbands-1 for simplicity in weights array:
+         // firstBand = 0, s = 0. Condition becomes b < 0 (incorrect for positive b)
+         // Let's assume firstBand refers to the exponent of 2 for the coarsest band.
+         // If nbands = 4, we want bands 2^0, 2^1, 2^2, 2^3 (or 2^-3, 2^-2, 2^-1, 2^0)
+         // The condition s + firstBand + b < 0 is key.
+         // If s=0, firstBand+b < 0.
+         // For fractal noise where frequency doubles: bands j, j+1, j+2...
+         // Let firstBand be the 'j' of the coarsest (lowest frequency) band we care about.
+         // Example: if we want 4 octaves, starting from frequency 1 (j=0 for N(2^0 x))
+         // then bands are j=0,1,2,3. firstBand=0. Loop b=0..3. (0+0+b < 0) fails.
+         // The example in Appendix 2 WMultibandNoise has:
+         // for (b=0; b < nbands && s+firstBand+b < 0; b++)
+         // This implies that (firstBand + b) should generally be negative.
+         // If we want bands N(x), N(2x), N(4x) ... these correspond to j=0, 1, 2...
+         // If we want bands N(x), N(x/2), N(x/4) ... these correspond to j=0, -1, -2...
+         // Let's use the common fractal noise setup:
+         // Octave 0: freq 1 (scale_exp 0)
+         // Octave 1: freq 2 (scale_exp 1)
+         // Octave 2: freq 4 (scale_exp 2)
+         // ...
+         // The loop in WMultibandNoise implies j values should be < -s.
+         // If s=0, j values must be negative.
+         // To use positive exponents (higher frequencies), we need to adjust how `firstBand` is interpreted or `s` used.
+         // Or, the paper's `N(2^j x)` means `j` is the resolution level.
+         // `j=-1` is representable, `j>=0` is not.
+         // If our "band 0" corresponds to `j=-nbands+1` (most detailed, highest freq if `j` increases for higher freq)
+         // and "band nbands-1" corresponds to `j=0` (coarsest representable detail if `j` increases for lower freq).
+
+        // Let's try to match typical fractal noise where frequency increases.
+        // Band 0: scale 2^0. Band 1: scale 2^1, etc.
+        // The condition `s + firstBand + b < 0` means that `firstBand + b` should be negative.
+        // To generate `N(p), N(2p), N(4p)` etc. `firstBand` should be negative such that `firstBand+b` covers these.
+        // This is confusing. Let's assume the WMultibandNoise is meant for negative j exponents primarily for now.
+        // For a simple fractal sum (fBm like):
+        // result = 0; float freq = 1.0; float amp = 1.0;
+        // for (int i=0; i<nbands; ++i) { result += amp * Noise2D(x*freq, y*freq); freq *= 2.0; amp *= persistence; }
+        // This does not use the WMultibandNoise structure directly.
+
+        // If we follow the paper's Figure 10(a) "12 bands with Gaussian distribution"
+        // and 10(b) "8 bands with white distribution". These are sums of N(2^j x).
+        // The condition `s+firstBand+b < 0` implies that the `j` values (which is `firstBand+b`)
+        // should be negative. This corresponds to bands N(x/2), N(x/4), etc.
+        // So, `firstBand` should be something like `-nbands` or `-nbands+1` to make `firstBand+b` negative.
+
+        return WMultibandNoise(p, 0.0f, nullptr, -nbands, nbands, weights); // Try firstBand = -nbands
+
     }
 };
 
@@ -372,141 +691,212 @@ public:
     }
 };
 
-// ===== FFT 實現 =====
-using Complex = std::complex<float>;
+// ===== 測試函數 (generateSingleBandDiagnostic 假設不變) =====
+void generateSingleBandDiagnostic(); // Declaration
 
+
+// --- Implementations for FFT and Test Functions (if not in separate .cpp) ---
+// (Copied from your provided code for completeness in a single block)
+
+// 1D Cooley-Tukey FFT (Radix-2)
+void fft1D(std::vector<Complex>& a, bool invert) {
+    int n = a.size();
+    if (n <= 1) return;
+    for (int i = 1, j = 0; i < n; i++) {
+        int bit = n >> 1;
+        for (; j & bit; bit >>= 1) j ^= bit;
+        j ^= bit;
+        if (i < j) std::swap(a[i], a[j]);
+    }
+    for (int len = 2; len <= n; len <<= 1) {
+        double ang = 2 * M_PI / len * (invert ? -1 : 1);
+        Complex wlen(cos(ang), sin(ang));
+        for (int i = 0; i < n; i += len) {
+            Complex w(1);
+            for (int j = 0; j < len / 2; j++) {
+                Complex u = a[i + j];
+                Complex v = a[i + j + len / 2] * w;
+                a[i + j] = u + v;
+                a[i + j + len / 2] = u - v;
+                w *= wlen;
+            }
+        }
+    }
+    if (invert) {
+        for (Complex& x : a) x /= n;
+    }
+}
+
+// 快速 2D FFT 實現
 void fft2D(const std::vector<std::vector<float>>& input,
-           std::vector<std::vector<Complex>>& output) {
+                std::vector<std::vector<Complex>>& output) {
+    if (input.empty() || input[0].empty()) {
+        std::cerr << "FFT Error: Input data is empty." << std::endl;
+        output.clear();
+        return;
+    }
     int height = input.size();
     int width = input[0].size();
     
-    output.resize(height, std::vector<Complex>(width));
-    
-    // DFT implementation
-    for (int k = 0; k < height; k++) {
-        for (int l = 0; l < width; l++) {
-            Complex sum(0, 0);
-            
-            for (int m = 0; m < height; m++) {
-                for (int n = 0; n < width; n++) {
-                    float angle = -2 * M_PI * ((float)(k * m) / height + (float)(l * n) / width);
-                    sum += input[m][n] * Complex(cos(angle), sin(angle));
-                }
+    if ((height & (height - 1)) != 0 || (width & (width - 1)) != 0 || height == 0 || width == 0) {
+        std::cerr << "FFT Error: Image dimensions (" << width << "x" << height << ") must be non-zero and powers of 2." << std::endl;
+        output.assign(height, std::vector<Complex>(width, 0)); // Assign to keep size consistent for caller
+        return;
+    }
+
+    output.assign(height, std::vector<Complex>(width)); // Use assign for clarity
+    for(int i=0; i<height; ++i) {
+        for(int j=0; j<width; ++j) {
+            if (std::isfinite(input[i][j])) {
+                output[i][j] = input[i][j];
+            } else {
+                // std::cerr << "Warning: Non-finite input to FFT at (" << j << "," << i << "). Using 0." << std::endl;
+                output[i][j] = 0.0f; // Replace NaN/Inf with 0 for FFT
             }
-            
-            output[k][l] = sum;
+        }
+    }
+
+    for (int i = 0; i < height; i++) {
+        fft1D(output[i], false);
+    }
+
+    std::vector<Complex> col(height);
+    for (int j = 0; j < width; j++) {
+        for (int i = 0; i < height; i++) {
+            col[i] = output[i][j];
+        }
+        fft1D(col, false);
+        for (int i = 0; i < height; i++) {
+            output[i][j] = col[i];
         }
     }
 }
 
 void saveSpectrum(const std::string& filename, const std::vector<std::vector<Complex>>& spectrum) {
+    if (spectrum.empty() || spectrum[0].empty()) {
+        std::cerr << "Error: Empty spectrum data for saveSpectrum: " << filename << std::endl;
+        return;
+    }
     int height = spectrum.size();
     int width = spectrum[0].size();
-    std::vector<std::vector<float>> magnitude(height, std::vector<float>(width));
-    
-    float maxMag = 0;
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; j++) {
-            magnitude[i][j] = std::abs(spectrum[i][j]);
-            maxMag = std::max(maxMag, magnitude[i][j]);
-        }
-    }
-    
-    // FFT shift and log scale
-    std::vector<std::vector<float>> output(height, std::vector<float>(width));
+    std::vector<std::vector<float>> log_magnitudes(height, std::vector<float>(width));
+    float min_log_m = std::numeric_limits<float>::max();
+    float max_log_m = std::numeric_limits<float>::lowest();
+    bool first_finite_log_m = true; // Handle all NaN/Inf case for log_magnitudes
+
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
             int shiftedI = (i + height/2) % height;
             int shiftedJ = (j + width/2) % width;
-            
-            float mag = magnitude[shiftedI][shiftedJ];
-            float logMag = log(1 + mag / maxMag * 255);
-            output[i][j] = logMag / log(256) * 2 - 1;
+            float mag_val = magnitude[shiftedI][shiftedJ]; // magnitude 是 abs(spectrum)
+            float current_log_mag;
+            if (maxMag > 1e-9f) { // maxMag 是 abs(spectrum) 的最大值
+                // 增大 FACTOR 可以讓低幅值部分在 log 後有更大的相對值
+                current_log_mag = std::log(1.0f + mag_val / maxMag * 1000.0f); // 嘗試更大的 FACTOR, e.g., 1000, 10000
+            } else {
+                current_log_mag = std::log(1.0f); // log(1) = 0
+            }
+            log_magnitudes[i][j] = current_log_mag;
+            if (std::isfinite(current_log_mag)) {
+                if (first_finite_log_m || current_log_mag < min_log_m) min_log_m = current_log_mag;
+                if (first_finite_log_m || current_log_mag > max_log_m) max_log_m = current_log_mag;
+                first_finite_log_m = false;
+            }
         }
     }
-    
-    saveBMP(filename, output);
+
+    if (first_finite_log_m) { // All log_magnitudes were NaN/Inf or empty
+        min_log_m = 0.0f;
+        max_log_m = std::log(2.0f); // Arbitrary small positive range if all else fails
+    }
+    if (std::abs(max_log_m - min_log_m) < 1e-6f) { // If range is still too small, expand it slightly
+        max_log_m = min_log_m + 1.0f; // Ensure a non-zero range for division
+    }
+
+
+    // Re-normalize log_magnitudes to [-1, 1] for output
+    std::vector<std::vector<float>> output_img(height, std::vector<float>(width));
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            if (std::isfinite(log_magnitudes[i][j])) {
+                if (max_log_m - min_log_m > 1e-6f) { // Check for valid range before division
+                    output_img[i][j] = 2.0f * (log_magnitudes[i][j] - min_log_m) / (max_log_m - min_log_m) - 1.0f;
+                } else { // Range is too small, map to a mid-gray or black
+                    output_img[i][j] = -1.0f; // Or 0.0f for mid-gray
+                }
+            } else {
+                output_img[i][j] = -1.0f; // Black for NaN/Inf in log_magnitudes
+            }
+        }
+    }
+    saveBMP(filename, output_img);
 }
 
-// ===== 測試函數 =====
-void generateNoiseComparison(int imageSize = 256) {
-    std::cout << "Generating noise patterns for comparison..." << std::endl;
-    
-    // 2D noise patterns
-    std::vector<std::vector<float>> wavelet2D(imageSize, std::vector<float>(imageSize));
-    std::vector<std::vector<float>> perlin2D(imageSize, std::vector<float>(imageSize));
-    
-    PerlinNoise perlin;
-    
-    for (int y = 0; y < imageSize; y++) {
-        for (int x = 0; x < imageSize; x++) {
-            float fx = x / 32.0f;
-            float fy = y / 32.0f;
-            
-            wavelet2D[y][x] = WaveletNoise::Noise2D(fx, fy);
-            perlin2D[y][x] = perlin.noise2D(fx, fy);
-        }
+void generateSingleBandDiagnostic() {
+    std::cout << "Generating single band diagnostic images..." << std::endl;
+    if (WaveletNoise::noiseTileSize == 0 || WaveletNoise::noiseTileData == nullptr) {
+        std::cerr << "Error in generateSingleBandDiagnostic: Noise tile not initialized." << std::endl;
+        return;
     }
     
-    saveBMP("wavelet_2d.bmp", wavelet2D);
-    saveBMP("perlin_2d.bmp", perlin2D);
-    
-    // 3D slice comparison
-    std::vector<std::vector<float>> wavelet3DSlice(imageSize, std::vector<float>(imageSize));
-    std::vector<std::vector<float>> perlin3DSlice(imageSize, std::vector<float>(imageSize));
-    
-    for (int y = 0; y < imageSize; y++) {
-        for (int x = 0; x < imageSize; x++) {
-            float p[3] = {x / 32.0f, y / 32.0f, 0.5f};
-            wavelet3DSlice[y][x] = WaveletNoise::WNoise(p);
-            perlin3DSlice[y][x] = perlin.noise(p[0], p[1], p[2]);
-        }
+    int imageSize = 128; 
+    if ((imageSize & (imageSize-1)) != 0) { // Ensure imageSize is power of 2 for FFT
+        std::cerr << "Warning: diagnostic imageSize " << imageSize << " is not a power of 2. FFT might fail." << std::endl;
+        // Optionally, find next power of 2 or adjust
     }
     
-    saveBMP("wavelet_3d_slice.bmp", wavelet3DSlice);
-    saveBMP("perlin_3d_slice.bmp", perlin3DSlice);
+    std::vector<std::vector<float>> baseBand(imageSize, std::vector<float>(imageSize));
+    int tileSize = WaveletNoise::noiseTileSize;
     
-    // 3D projection comparison
-    std::vector<std::vector<float>> waveletProjection(imageSize, std::vector<float>(imageSize));
-    float normal[3] = {0, 0, 1}; // Project along Z axis
-    
+    // Combo 1: imageSize = tileSize, multiplier = 1
+    imageSize = tileSize; // Override for Combo 1
+    std::cout << "Using Combo 1: imageSize=" << imageSize << ", tileSize=" << tileSize << ", multiplier=1" << std::endl;
+    baseBand.assign(imageSize, std::vector<float>(imageSize)); // Resize
+
     for (int y = 0; y < imageSize; y++) {
         for (int x = 0; x < imageSize; x++) {
-            float p[3] = {x / 32.0f, y / 32.0f, 0.0f};
-            waveletProjection[y][x] = WaveletNoise::WProjectedNoise(p, normal);
+            float fx = (float)x / imageSize * tileSize * 1.0f; 
+            float fy = (float)y / imageSize * tileSize * 1.0f;
+            float p[3] = {fx, fy, 0.5f};
+            baseBand[y][x] = WaveletNoise::WNoise(p);
         }
     }
+    saveBMP("diagnostic_base_band.bmp", baseBand);
+    std::vector<std::vector<Complex>> baseSpectrum;
+    fft2D(baseBand, baseSpectrum);
+    saveSpectrum("diagnostic_base_band_spectrum.bmp", baseSpectrum);
     
-    saveBMP("wavelet_3d_projected.bmp", waveletProjection);
-    
-    // Multiband noise
-    float weights4[4] = {0.5f, 0.25f, 0.125f, 0.0625f};
-    std::vector<std::vector<float>> waveletMulti(imageSize, std::vector<float>(imageSize));
-    std::vector<std::vector<float>> perlinMulti(imageSize, std::vector<float>(imageSize));
-    
-    for (int y = 0; y < imageSize; y++) {
-        for (int x = 0; x < imageSize; x++) {
-            waveletMulti[y][x] = WaveletNoise::MultibandNoise2D(x / 32.0f, y / 32.0f, 4, weights4);
-            
-            // Perlin multiband
-            float sum = 0, variance = 0;
-            for (int b = 0; b < 4; b++) {
-                float scale = pow(2.0f, b);
-                sum += weights4[b] * perlin.noise2D(x / 32.0f * scale, y / 32.0f * scale);
-                variance += weights4[b] * weights4[b];
+    // Scaled bands (optional, can be run after base band is confirmed good)
+    // Ensure imageSize for scaled bands is also power of 2
+    imageSize = 128; // Reset for scaled bands or use a consistent power of 2
+    std::cout << "Generating scaled bands with imageSize=" << imageSize << std::endl;
+
+    for (int scale_exp = -1; scale_exp <= 1; scale_exp++) { // Reduced range for quicker test
+        std::vector<std::vector<float>> scaledBand(imageSize, std::vector<float>(imageSize));
+        float scale = std::pow(2.0f, scale_exp);
+        
+        for (int y = 0; y < imageSize; y++) {
+            for (int x = 0; x < imageSize; x++) {
+                // For scaled bands, the 'tileSize' in fx,fy should probably be fixed 
+                // to a reference scale, or fx,fy should be directly scaled world coords.
+                // Let's use world coords directly: map image to [0, world_extent * scale]
+                float world_extent = static_cast<float>(WaveletNoise::noiseTileSize); // Or some other reference like 16.0f
+                float fx = (float)x / imageSize * world_extent * scale; 
+                float fy = (float)y / imageSize * world_extent * scale;
+                float p[3] = {fx, fy, 0.5f};
+                scaledBand[y][x] = WaveletNoise::WNoise(p);
             }
-            perlinMulti[y][x] = sum / sqrt(variance);
         }
+        saveBMP("diagnostic_band_scale_exp" + std::to_string(scale_exp) + ".bmp", scaledBand);
+        std::vector<std::vector<Complex>> scaledSpectrum;
+        fft2D(scaledBand, scaledSpectrum);
+        saveSpectrum("diagnostic_spectrum_scale_exp" + std::to_string(scale_exp) + ".bmp", scaledSpectrum);
     }
-    
-    saveBMP("wavelet_multiband.bmp", waveletMulti);
-    saveBMP("perlin_multiband.bmp", perlinMulti);
 }
 
 void generateSpectralAnalysis(int imageSize = 256) {
     std::cout << "Performing spectral analysis..." << std::endl;
     
-    // Generate single band noise for spectral analysis
     std::vector<std::vector<float>> wavelet(imageSize, std::vector<float>(imageSize));
     std::vector<std::vector<float>> perlin(imageSize, std::vector<float>(imageSize));
     std::vector<std::vector<float>> waveletSlice(imageSize, std::vector<float>(imageSize));
@@ -515,22 +905,29 @@ void generateSpectralAnalysis(int imageSize = 256) {
     PerlinNoise perlinGen;
     float normal[3] = {0, 0, 1};
     
+    // 修正：使用正確的座標範圍來展示帶限特性
+    int tileSize = WaveletNoise::noiseTileSize;
+    
     for (int y = 0; y < imageSize; y++) {
         for (int x = 0; x < imageSize; x++) {
-            float fx = x / 32.0f;
-            float fy = y / 32.0f;
+            // 修正：座標映射到完整的 tile 範圍
+            float fx = (float)x / imageSize * tileSize;
+            float fy = (float)y / imageSize * tileSize;
             
             // 2D noise
-            wavelet[y][x] = WaveletNoise::Noise2D(fx, fy);
-            perlin[y][x] = perlinGen.noise2D(fx, fy);
+            float p2d[3] = {fx, fy, 0.5f};
+            wavelet[y][x] = WaveletNoise::WNoise(p2d);
+            
+            // Perlin noise (保持原始縮放用於比較)
+            perlin[y][x] = perlinGen.noise2D(x / 32.0f, y / 32.0f);
             
             // 3D slice
-            float p[3] = {fx, fy, 0.5f};
-            waveletSlice[y][x] = WaveletNoise::WNoise(p);
+            float p3d[3] = {fx, fy, 0.5f};
+            waveletSlice[y][x] = WaveletNoise::WNoise(p3d);
             
             // 3D projected
-            p[2] = 0.0f;
-            waveletProjected[y][x] = WaveletNoise::WProjectedNoise(p, normal);
+            p3d[2] = 0.0f;
+            waveletProjected[y][x] = WaveletNoise::WProjectedNoise(p3d, normal);
         }
     }
     
@@ -552,66 +949,93 @@ void generateBandComparison() {
     std::cout << "Generating individual frequency bands..." << std::endl;
     
     int imageSize = 256;
-    float singleWeight[1] = {1.0f};
     
-    // Generate 3 adjacent bands for both Wavelet and Perlin
-    for (int band = -2; band <= 0; band++) {
+    // 生成 3 個相鄰頻帶，展示頻帶分離
+    for (int band = 0; band < 3; band++) {
         std::vector<std::vector<float>> waveletBand(imageSize, std::vector<float>(imageSize));
         std::vector<std::vector<float>> perlinBand(imageSize, std::vector<float>(imageSize));
         
         PerlinNoise perlin;
-        float scale = pow(2.0f, -band);
+        float scale = pow(2.0f, band);  // 2^0=1, 2^1=2, 2^2=4
         
         for (int y = 0; y < imageSize; y++) {
             for (int x = 0; x < imageSize; x++) {
-                float p[3] = {x / 32.0f * scale, y / 32.0f * scale, 0.5f};
-                waveletBand[y][x] = WaveletNoise::WMultibandNoise(p, 0, nullptr, band, 1, singleWeight);
-                perlinBand[y][x] = perlin.noise(p[0], p[1], p[2]);
+                // 修正：直接計算 N(2^band * x) 
+                float evalX = (float)x / imageSize * scale;
+                float evalY = (float)y / imageSize * scale;
+                float p[3] = {evalX, evalY, 0.5f};
+                
+                // 直接使用 WNoise 評估單一頻帶
+                waveletBand[y][x] = WaveletNoise::WNoise(p);
+                
+                // Perlin 對應頻帶
+                perlinBand[y][x] = perlin.noise(evalX, evalY, 0.5f);
             }
         }
         
-        saveBMP("wavelet_band_" + std::to_string(-band) + ".bmp", waveletBand);
-        saveBMP("perlin_band_" + std::to_string(-band) + ".bmp", perlinBand);
+        saveBMP("wavelet_band_" + std::to_string(band) + ".bmp", waveletBand);
+        saveBMP("perlin_band_" + std::to_string(band) + ".bmp", perlinBand);
         
         // Compute spectrum for each band
         std::vector<std::vector<Complex>> waveletSpec, perlinSpec;
         fft2D(waveletBand, waveletSpec);
         fft2D(perlinBand, perlinSpec);
         
-        saveSpectrum("spectrum_wavelet_band_" + std::to_string(-band) + ".bmp", waveletSpec);
-        saveSpectrum("spectrum_perlin_band_" + std::to_string(-band) + ".bmp", perlinSpec);
+        saveSpectrum("spectrum_wavelet_band_" + std::to_string(band) + ".bmp", waveletSpec);
+        saveSpectrum("spectrum_perlin_band_" + std::to_string(band) + ".bmp", perlinSpec);
     }
 }
 
 // ===== 主程式 =====
 int main() {
-    std::cout << "=== Wavelet Noise Complete Implementation ===" << std::endl;
-    std::cout << "Based on 'Wavelet Noise' by Cook & DeRose (2005)" << std::endl << std::endl;
+    // std::cout << "=== Wavelet Noise Complete Implementation ===" << std::endl;
+    // std::cout << "Based on 'Wavelet Noise' by Cook & DeRose (2005)" << std::endl << std::endl;
     
-    // Initialize noise tile
-    std::cout << "Generating noise tile..." << std::endl;
-    WaveletNoise::GenerateNoiseTile(32);
+    // // Initialize noise tile
+    // std::cout << "Generating noise tile..." << std::endl;
+    std::cout << "=== Wavelet Noise Diagnostic Mode ===" << std::endl;
     
-    // Generate all comparisons
-    generateNoiseComparison();
-    generateSpectralAnalysis();
-    generateBandComparison();
+    std::cout << "Generating noise tile (128x128x128)..." << std::endl;
+    WaveletNoise::GenerateNoiseTile(128); 
     
-    std::cout << "\nGenerated files:" << std::endl;
-    std::cout << "\nVisual Comparison:" << std::endl;
-    std::cout << "- wavelet_2d.bmp / perlin_2d.bmp: 2D noise comparison" << std::endl;
-    std::cout << "- wavelet_3d_slice.bmp / perlin_3d_slice.bmp: 3D noise slice" << std::endl;
-    std::cout << "- wavelet_3d_projected.bmp: 3D noise projected to 2D" << std::endl;
-    std::cout << "- wavelet_multiband.bmp / perlin_multiband.bmp: Multiband noise" << std::endl;
+    if (WaveletNoise::noiseTileData == nullptr || WaveletNoise::noiseTileSize == 0) {
+        std::cerr << "Critical Error: Noise tile not generated or size is zero. Aborting." << std::endl;
+        return 1;
+    }
     
-    std::cout << "\nSpectral Analysis:" << std::endl;
-    std::cout << "- spectrum_wavelet_2d.bmp / spectrum_perlin_2d.bmp: 2D noise spectra" << std::endl;
-    std::cout << "- spectrum_wavelet_3d_slice.bmp: 3D slice spectrum" << std::endl;
-    std::cout << "- spectrum_wavelet_3d_projected.bmp: 3D projected spectrum" << std::endl;
+    // // Generate all comparisons with fixes
+    // generateNoiseComparison();
+    // generateSpectralAnalysis();  // 使用修正版本
+    // generateBandComparison();     // 使用修正版本
     
-    std::cout << "\nFrequency Band Analysis:" << std::endl;
-    std::cout << "- wavelet_band_0,1,2.bmp / perlin_band_0,1,2.bmp: Individual bands" << std::endl;
-    std::cout << "- spectrum_wavelet_band_0,1,2.bmp / spectrum_perlin_band_0,1,2.bmp: Band spectra" << std::endl;
+    // 新增：診斷圖像
+    std::cout << "\nStarting generateSingleBandDiagnostic()..." << std::endl;
+    generateSingleBandDiagnostic();
     
+    std::cout << "\n--- Finished ---" << std::endl;
+    
+    // std::cout << "\nGenerated files:" << std::endl;
+
+    // std::cout << "\nVisual Comparison:" << std::endl;
+    // std::cout << "- wavelet_2d.bmp / perlin_2d.bmp: 2D noise comparison" << std::endl;
+    // std::cout << "- wavelet_3d_slice.bmp / perlin_3d_slice.bmp: 3D noise slice" << std::endl;
+    // std::cout << "- wavelet_3d_projected.bmp: 3D noise projected to 2D" << std::endl;
+    // std::cout << "- wavelet_multiband.bmp / perlin_multiband.bmp: Multiband noise" << std::endl;
+    
+    // std::cout << "\nSpectral Analysis:" << std::endl;
+    // std::cout << "- spectrum_wavelet_2d.bmp / spectrum_perlin_2d.bmp: 2D noise spectra" << std::endl;
+    // std::cout << "- spectrum_wavelet_3d_slice.bmp: 3D slice spectrum" << std::endl;
+    // std::cout << "- spectrum_wavelet_3d_projected.bmp: 3D projected spectrum" << std::endl;
+    
+    // std::cout << "\nFrequency Band Analysis:" << std::endl;
+    // std::cout << "- wavelet_band_0,1,2.bmp / perlin_band_0,1,2.bmp: Individual bands" << std::endl;
+    // std::cout << "- spectrum_wavelet_band_0,1,2.bmp / spectrum_perlin_band_0,1,2.bmp: Band spectra" << std::endl;
+    
+    // std::cout << "\nDiagnostic files:" << std::endl;
+    // std::cout << "- diagnostic_base_band.bmp: Base band N(x) over multiple tiles" << std::endl;
+    // std::cout << "- diagnostic_base_band_spectrum.bmp: Spectrum showing band-limited nature" << std::endl;
+    // std::cout << "- diagnostic_band_scale_*.bmp: Different frequency bands" << std::endl;
+    // std::cout << "- diagnostic_spectrum_scale_*.bmp: Spectra of different bands" << std::endl;
+
     return 0;
 }
