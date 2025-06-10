@@ -80,6 +80,24 @@ void saveBMP(const std::string& filename, const std::vector<std::vector<float>>&
     std::cout << "Saved: " << filename << std::endl;
 }
 
+// ===== 協助函數：將數據保存為 CSV 文件 =====
+void saveDataAsCSV(const std::string& filename, const std::vector<std::vector<float>>& data) {
+    if (data.empty()) return;
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        std::cerr << "Error: Could not open file for writing CSV: " << filename << std::endl;
+        return;
+    }
+    for (size_t i = 0; i < data.size(); ++i) {
+        for (size_t j = 0; j < data[i].size(); ++j) {
+            file << data[i][j] << (j == data[i].size() - 1 ? "" : ",");
+        }
+        file << "\n";
+    }
+    file.close();
+    std::cout << "Saved CSV data: " << filename << std::endl;
+}
+
 // ===== 數學工具函數 =====
 inline int Mod(int x, int n) {
     if (n == 0) {
@@ -779,22 +797,58 @@ void saveSpectrum(const std::string& filename, const std::vector<std::vector<Com
     }
     int height = spectrum.size();
     int width = spectrum[0].size();
+
+    // Step 1: Calculate magnitudes and find maxMag
+    std::vector<std::vector<float>> magnitudes(height, std::vector<float>(width));
+    float maxMag = 0.0f;
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            float mag = std::abs(spectrum[i][j]);
+            if (std::isfinite(mag)) {
+                magnitudes[i][j] = mag;
+                if (mag > maxMag) maxMag = mag;
+            } else {
+                magnitudes[i][j] = 0.0f;
+            }
+        }
+    }
+
+    // Step 2: Create fft-shifted magnitudes and save to CSV
+    std::vector<std::vector<float>> shifted_magnitudes(height, std::vector<float>(width));
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            int shiftedI = (i + height / 2) % height;
+            int shiftedJ = (j + width / 2) % width;
+            shifted_magnitudes[i][j] = magnitudes[shiftedI][shiftedJ];
+        }
+    }
+
+    // Save shifted magnitudes to CSV
+    std::string csv_filename = filename;
+    size_t dot_pos = csv_filename.rfind(".bmp");
+    if (dot_pos != std::string::npos) {
+        csv_filename.replace(dot_pos, 4, "_magnitude.csv");
+    } else {
+        csv_filename += "_magnitude.csv";
+    }
+    saveDataAsCSV(csv_filename, shifted_magnitudes);
+
+
+    // Step 3: Calculate log-magnitudes from shifted data for BMP visualization
     std::vector<std::vector<float>> log_magnitudes(height, std::vector<float>(width));
     float min_log_m = std::numeric_limits<float>::max();
     float max_log_m = std::numeric_limits<float>::lowest();
-    bool first_finite_log_m = true; // Handle all NaN/Inf case for log_magnitudes
+    bool first_finite_log_m = true;
 
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
-            int shiftedI = (i + height/2) % height;
-            int shiftedJ = (j + width/2) % width;
-            float mag_val = magnitude[shiftedI][shiftedJ]; // magnitude 是 abs(spectrum)
+            float mag_val = shifted_magnitudes[i][j];
             float current_log_mag;
-            if (maxMag > 1e-9f) { // maxMag 是 abs(spectrum) 的最大值
-                // 增大 FACTOR 可以讓低幅值部分在 log 後有更大的相對值
-                current_log_mag = std::log(1.0f + mag_val / maxMag * 1000.0f); // 嘗試更大的 FACTOR, e.g., 1000, 10000
+            if (maxMag > 1e-9f) {
+                 // 增大 FACTOR 可以讓低幅值部分在 log 後有更大的相對值
+                 current_log_mag = std::log(1.0f + mag_val / maxMag * 1000.0f); // 嘗試更大的 FACTOR, e.g., 1000, 10000
             } else {
-                current_log_mag = std::log(1.0f); // log(1) = 0
+                current_log_mag = 0.0f; // log(1) is 0
             }
             log_magnitudes[i][j] = current_log_mag;
             if (std::isfinite(current_log_mag)) {
@@ -807,14 +861,14 @@ void saveSpectrum(const std::string& filename, const std::vector<std::vector<Com
 
     if (first_finite_log_m) { // All log_magnitudes were NaN/Inf or empty
         min_log_m = 0.0f;
-        max_log_m = std::log(2.0f); // Arbitrary small positive range if all else fails
+        max_log_m = 1.0f; // Arbitrary small positive range if all else fails
     }
     if (std::abs(max_log_m - min_log_m) < 1e-6f) { // If range is still too small, expand it slightly
         max_log_m = min_log_m + 1.0f; // Ensure a non-zero range for division
     }
 
 
-    // Re-normalize log_magnitudes to [-1, 1] for output
+    // Step 4: Re-normalize log_magnitudes to [-1, 1] for BMP output
     std::vector<std::vector<float>> output_img(height, std::vector<float>(width));
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {

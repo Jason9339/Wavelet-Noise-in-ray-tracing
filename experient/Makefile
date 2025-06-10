@@ -30,7 +30,7 @@ run: $(TARGET)
 
 # Clean build files
 clean:
-	rm -f $(TARGET) $(OBJECTS) *.bmp
+	rm -f $(TARGET) $(OBJECTS) *.bmp *.csv
 
 # Clean only image files
 clean-images:
