@@ -1,0 +1,3 @@
+/home/jason/wavelet_noise_project/test3/build/CMakeFiles/noise_analysis.dir
+/home/jason/wavelet_noise_project/test3/build/CMakeFiles/edit_cache.dir
+/home/jason/wavelet_noise_project/test3/build/CMakeFiles/rebuild_cache.dir
