@@ -23,33 +23,22 @@ public:
     ~WaveletNoise();
 
     // Generates the noise coefficients
+    // Following Section 3.6 for separable filtering
     void generateNoiseTile2D();
     void generateNoiseTile3D();
 
     // Evaluation functions
+    // Following Appendix 2, WNoise
     float evaluate2D(const float p[2]) const;
     float evaluate3D(const float p[3]) const;
+    // Following Section 3.7 and Appendix 2, WProjectedNoise
+    float evaluate3DProjected(const float p[3], const float normal[3]) const;
 
     // Debug and analysis
-    enum class DebugStep {
-        R_INITIAL,
-        AFTER_X_FILTER,
-        AFTER_Y_FILTER,
-        AFTER_Z_FILTER,
-        N_COEFFS_PRE_CORRECTION,
-        N_COEFFS_FINAL
-    };
-    
-    void saveIntermediateData(const std::vector<float>& data, int dim_n, DebugStep step, 
-                             const std::string& base_filename = "wn_step_") const;
     DataStats calculateStats(const std::vector<float>& data, const std::string& name) const;
-
     const std::vector<float>& getNoiseCoefficients() const;
     int getTileSize() const;
 
-    void generateNoiseTile();
-    float evaluate3DProjected(const float p[3], const float normal[3]) const;
-    float calculateTotalEnergy(const std::vector<float>& data) const;
 
 private:
     int tileSizeN;
@@ -58,10 +47,10 @@ private:
     std::mt19937 rng;
     std::normal_distribution<float> gaussianDist;
 
-    // Filter coefficients
+    // Filter coefficients from Appendix 1
     static const int ARAD = 16;
-    static const float A_COEFFS[2 * ARAD];
-    static const float P_COEFFS[4];
+    static const float A_COEFFS[2 * ARAD]; // Downsampling filter
+    static const float P_COEFFS[4];        // Upsampling filter
 
     // Helper functions
     int Mod(int x, int n) const;
