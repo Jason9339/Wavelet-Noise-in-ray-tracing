@@ -92,7 +92,7 @@ void generateOctaveBandNoise(int imageSize, int octave, const std::string& outpu
     std::vector<float> image(imageSize * imageSize);
     
     // 固定一個較小的觀察範圍，比如在圖像上顯示 4 個單位
-    float base_range = 4.0f;
+    float base_range = 2.0f;
     // 頻率縮放因子
     float octave_scale = std::pow(2.0f, octave);
 
@@ -238,7 +238,7 @@ void generate2DOctaveBandNoise(int imageSize, int octave, const std::string& out
 int main() {
     std::cout << "=== Wavelet Noise Band-Limited Demonstration ===" << std::endl;
     
-    const int IMAGE_SIZE = 512;
+    const int IMAGE_SIZE = 256;
     
     // ===== 測試 3D 切片噪聲 (保留原有測試) =====
     std::cout << "\n--- Generating 3D Sliced Noise Patterns ---" << std::endl;
@@ -248,9 +248,9 @@ int main() {
 
     // ===== 新增測試：純 2D 噪聲 =====
     std::cout << "\n--- Generating Pure 2D Noise Patterns ---" << std::endl;
+    generate2DOctaveBandNoise(IMAGE_SIZE, 3, "wavelet_noise_2D_octave_3.raw");
+    generate2DOctaveBandNoise(IMAGE_SIZE, 4, "wavelet_noise_2D_octave_4.raw");
     generate2DOctaveBandNoise(IMAGE_SIZE, 5, "wavelet_noise_2D_octave_5.raw");
-    generate2DOctaveBandNoise(IMAGE_SIZE, 6, "wavelet_noise_2D_octave_6.raw");
-    generate2DOctaveBandNoise(IMAGE_SIZE, 7, "wavelet_noise_2D_octave_7.raw");
 
     std::cout << "\n=== Generation Complete ===" << std::endl;
     std::cout << "Generated files for analysis:" << std::endl;

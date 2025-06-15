@@ -4,7 +4,7 @@ from scipy.fft import fft2, fftshift
 from mpl_toolkits.mplot3d import Axes3D
 import os
 
-def load_raw_data(filename, size=512):
+def load_raw_data(filename, size=256):
     """Loads a raw float32 file into a numpy array."""
     try:
         with open(filename, 'rb') as f:
@@ -141,10 +141,10 @@ def analyze_single_band(filename, title):
     try:
         with open(filename, 'rb') as f:
             data = np.frombuffer(f.read(), dtype=np.float32)
-        if data.size != 512 * 512:
+        if data.size != 256 * 256:
             print(f"Size mismatch in {filename}: expected 262144 elements, got {data.size}")
             return None
-        data = data.reshape((512, 512))
+        data = data.reshape((256, 256))
     except:
         print(f"Could not read {filename}")
         return None
@@ -250,7 +250,7 @@ def analyze_files(two_d_files, three_d_files):
     print("versus the low-frequency leakage in the 3D Sliced power spectra.")
 
 if __name__ == "__main__":
-    two_d_files = [f"wavelet_noise_2D_octave_{oct}.raw" for oct in [5, 6, 7]]
+    two_d_files = [f"wavelet_noise_2D_octave_{oct}.raw" for oct in [3, 4, 5]]
     three_d_files = [f"wavelet_noise_3Dsliced_octave_{oct}.raw" for oct in [3, 4, 5]]
     
     analyze_files(two_d_files, three_d_files) 
