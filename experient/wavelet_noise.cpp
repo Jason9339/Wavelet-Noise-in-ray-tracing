@@ -488,8 +488,6 @@ public:
         
         return result;
     }
-    
-    // ... (WProjectedNoise, MultibandNoise, Noise2D, MultibandNoise2D as before) ...
     // 3D noise projected onto 2D (論文附錄2)
     static float WProjectedNoise(float p[3], float normal[3]) {
         int n = noiseTileSize;
@@ -539,8 +537,6 @@ public:
         for (b = 0; b < nbands; b++) {
             int current_band_j = firstBand + b;
             if (s + current_band_j >= 0 && nbands > 1) { // Only skip if s makes j too high, and more than one band requested
-                 // For a single band request (nbands=1), always compute it regardless of j
-                 // This aligns with how generateSingleBandDiagnostic calls WNoise directly
                  if (nbands == 1 && current_band_j >=0 ) {} // Allow if nbands=1
                  else continue; 
             }
@@ -587,56 +583,7 @@ public:
     
     static float MultibandNoise2D(float x, float y, int nbands, float* weights) {
         float p[3] = {x, y, 0.5f};
-         // For typical fractal noise, firstBand is often 0 or negative.
-         // If bands are 0, 1, 2, ..., then firstBand = 0.
-         // If bands are ..., -2, -1, 0, then firstBand = some_negative_value.
-         // Paper's M(x) = sum w_b N(2^b x), where b=b_min...b_max.
-         // If we want b to go from 0 to nbands-1 for simplicity in weights array:
-         // firstBand = 0, s = 0. Condition becomes b < 0 (incorrect for positive b)
-         // Let's assume firstBand refers to the exponent of 2 for the coarsest band.
-         // If nbands = 4, we want bands 2^0, 2^1, 2^2, 2^3 (or 2^-3, 2^-2, 2^-1, 2^0)
-         // The condition s + firstBand + b < 0 is key.
-         // If s=0, firstBand+b < 0.
-         // For fractal noise where frequency doubles: bands j, j+1, j+2...
-         // Let firstBand be the 'j' of the coarsest (lowest frequency) band we care about.
-         // Example: if we want 4 octaves, starting from frequency 1 (j=0 for N(2^0 x))
-         // then bands are j=0,1,2,3. firstBand=0. Loop b=0..3. (0+0+b < 0) fails.
-         // The example in Appendix 2 WMultibandNoise has:
-         // for (b=0; b < nbands && s+firstBand+b < 0; b++)
-         // This implies that (firstBand + b) should generally be negative.
-         // If we want bands N(x), N(2x), N(4x) ... these correspond to j=0, 1, 2...
-         // If we want bands N(x), N(x/2), N(x/4) ... these correspond to j=0, -1, -2...
-         // Let's use the common fractal noise setup:
-         // Octave 0: freq 1 (scale_exp 0)
-         // Octave 1: freq 2 (scale_exp 1)
-         // Octave 2: freq 4 (scale_exp 2)
-         // ...
-         // The loop in WMultibandNoise implies j values should be < -s.
-         // If s=0, j values must be negative.
-         // To use positive exponents (higher frequencies), we need to adjust how `firstBand` is interpreted or `s` used.
-         // Or, the paper's `N(2^j x)` means `j` is the resolution level.
-         // `j=-1` is representable, `j>=0` is not.
-         // If our "band 0" corresponds to `j=-nbands+1` (most detailed, highest freq if `j` increases for higher freq)
-         // and "band nbands-1" corresponds to `j=0` (coarsest representable detail if `j` increases for lower freq).
-
-        // Let's try to match typical fractal noise where frequency increases.
-        // Band 0: scale 2^0. Band 1: scale 2^1, etc.
-        // The condition `s + firstBand + b < 0` means that `firstBand + b` should be negative.
-        // To generate `N(p), N(2p), N(4p)` etc. `firstBand` should be negative such that `firstBand+b` covers these.
-        // This is confusing. Let's assume the WMultibandNoise is meant for negative j exponents primarily for now.
-        // For a simple fractal sum (fBm like):
-        // result = 0; float freq = 1.0; float amp = 1.0;
-        // for (int i=0; i<nbands; ++i) { result += amp * Noise2D(x*freq, y*freq); freq *= 2.0; amp *= persistence; }
-        // This does not use the WMultibandNoise structure directly.
-
-        // If we follow the paper's Figure 10(a) "12 bands with Gaussian distribution"
-        // and 10(b) "8 bands with white distribution". These are sums of N(2^j x).
-        // The condition `s+firstBand+b < 0` implies that the `j` values (which is `firstBand+b`)
-        // should be negative. This corresponds to bands N(x/2), N(x/4), etc.
-        // So, `firstBand` should be something like `-nbands` or `-nbands+1` to make `firstBand+b` negative.
-
-        return WMultibandNoise(p, 0.0f, nullptr, -nbands, nbands, weights); // Try firstBand = -nbands
-
+        return WMultibandNoise(p, 0.0f, nullptr, -nbands, nbands, weights);
     }
 };
 

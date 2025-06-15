@@ -5,6 +5,7 @@
 #include <random>
 #include <string>
 #include <limits>
+#include <iostream> // For stats output
 
 // Statistical analysis structure
 struct DataStats {
@@ -22,12 +23,12 @@ public:
     ~WaveletNoise();
 
     // Generates the noise coefficients
-    void generateNoiseTile();
+    void generateNoiseTile2D();
     void generateNoiseTile3D();
 
     // Evaluation functions
+    float evaluate2D(const float p[2]) const;
     float evaluate3D(const float p[3]) const;
-    float evaluate3DProjected(const float p[3], const float normal[3]) const;
 
     // Debug and analysis
     enum class DebugStep {
@@ -41,11 +42,14 @@ public:
     
     void saveIntermediateData(const std::vector<float>& data, int dim_n, DebugStep step, 
                              const std::string& base_filename = "wn_step_") const;
-    float calculateTotalEnergy(const std::vector<float>& data) const;
     DataStats calculateStats(const std::vector<float>& data, const std::string& name) const;
 
     const std::vector<float>& getNoiseCoefficients() const;
     int getTileSize() const;
+
+    void generateNoiseTile();
+    float evaluate3DProjected(const float p[3], const float normal[3]) const;
+    float calculateTotalEnergy(const std::vector<float>& data) const;
 
 private:
     int tileSizeN;
