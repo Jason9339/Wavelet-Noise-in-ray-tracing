@@ -18,8 +18,8 @@ run: $(TARGET)
 
 clean:
 	rm -f $(OBJS) $(TARGET)
-	rm -f *.raw
-	rm -f *.png
+	rm -f result_raw/*.raw
+	rm -f result_analyze/*.png
 
 help:
 	@echo "可用的命令："

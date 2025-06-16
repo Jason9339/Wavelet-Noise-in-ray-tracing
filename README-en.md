@@ -51,52 +51,52 @@ Experiments produce results close to the original paper's Figure 8, validating t
 ### Original Paper Reference
 <img src="asset/wavelet%20noise%20figure8.png" width="500" alt="Wavelet Function Figure 8">
 
-<table>
-<tr>
-<td width="250px"><strong>My Experimental Results (Octave 4)</strong></td>
-<td align="center"></td>
-</tr>
-<tr>
-<td><strong>Perlin Noise Analysis:</strong></td>
-<td></td>
-</tr>
-<tr>
-<td>Perlin 2D Noise Detailed Analysis (Octave 4)</td>
-<td align="center"><img src="experient/result_analyze/perlin_noise_2D_octave_4_detailed_analysis.png" width="350" alt="Perlin 2D Analysis"></td>
-</tr>
-<tr>
-<td>Perlin 3D Sliced Noise Detailed Analysis (Octave 4)</td>
-<td align="center"><img src="experient/result_analyze/perlin_noise_3Dsliced_octave_4_detailed_analysis.png" width="350" alt="Perlin 3D Sliced Analysis"></td>
-</tr>
-<tr>
-<td><strong>Wavelet Noise Analysis (Single frequency band results):</strong></td>
-<td></td>
-</tr>
-<tr>
-<td>Wavelet 2D Noise Detailed Analysis (Octave 4)</td>
-<td align="center"><img src="experient/result_analyze/wavelet_noise_2D_octave_4_detailed_analysis.png" width="350" alt="Wavelet 2D Analysis"></td>
-</tr>
-<tr>
-<td>Wavelet 3D Sliced Noise Detailed Analysis (Octave 4)</td>
-<td align="center"><img src="experient/result_analyze/wavelet_noise_3Dsliced_octave_4_detailed_analysis.png" width="350" alt="Wavelet 3D Sliced Analysis"></td>
-</tr>
-<tr>
-<td>Wavelet 3D Projected Noise Detailed Analysis (Octave 4)</td>
-<td align="center"><img src="experient/result_analyze/wavelet_noise_3Dprojected_octave_4_detailed_analysis.png" width="350" alt="Wavelet 3D Projected Analysis"></td>
-</tr>
-<tr>
-<td><strong>Overall Comparison Analysis:</strong></td>
-<td></td>
-</tr>
-<tr>
-<td>Wavelet Noise Complete Comparison (Octave 4)</td>
-<td align="center"><img src="experient/result_analyze/wavelet_full_comparison_octave_4.png" width="350" alt="Wavelet Full Comparison"></td>
-</tr>
-<tr>
-<td>Comparison with Original Paper Figure 8 (Octave 4)</td>
-<td align="center"><img src="experient/result_analyze/figure8_comparison_octave_4.png" width="350" alt="Figure 8 Comparison"></td>
-</tr>
-</table>
+### My Experimental Results (Octave 4)
+
+#### Perlin Noise Analysis:
+
+**Perlin 2D Noise Detailed Analysis (Octave 4)**
+<div style="text-align:center; max-width:700px; margin:auto;">
+  <img src="experient/result_analyze/perlin_noise_2D_octave_4_detailed_analysis.png" style="width:100%;" alt="Perlin 2D Analysis">
+</div>
+
+**Perlin 3D Sliced Noise Detailed Analysis (Octave 4)**
+<div style="text-align:center; max-width:700px; margin:auto;">
+  <img src="experient/result_analyze/perlin_noise_3Dsliced_octave_4_detailed_analysis.png" style="width:100%;" alt="Perlin 3D Sliced Analysis">
+</div>
+
+---
+
+#### Wavelet Noise Analysis (Single frequency band results):
+
+**Wavelet 2D Noise Detailed Analysis (Octave 4)**
+<div style="text-align:center; max-width:700px; margin:auto;">
+  <img src="experient/result_analyze/wavelet_noise_2D_octave_4_detailed_analysis.png" style="width:100%;" alt="Wavelet 2D Analysis">
+</div>
+
+**Wavelet 3D Sliced Noise Detailed Analysis (Octave 4)**
+<div style="text-align:center; max-width:700px; margin:auto;">
+  <img src="experient/result_analyze/wavelet_noise_3Dsliced_octave_4_detailed_analysis.png" style="width:100%;" alt="Wavelet 3D Sliced Analysis">
+</div>
+
+**Wavelet 3D Projected Noise Detailed Analysis (Octave 4)**
+<div style="text-align:center; max-width:700px; margin:auto;">
+  <img src="experient/result_analyze/wavelet_noise_3Dprojected_octave_4_detailed_analysis.png" style="width:100%;" alt="Wavelet 3D Projected Analysis">
+</div>
+
+---
+
+#### Overall Comparison Analysis:
+
+**Wavelet Noise Complete Comparison (Octave 4)**
+<div style="text-align:center; max-width:700px; margin:auto;">
+  <img src="experient/result_analyze/wavelet_full_comparison_octave_4.png" style="width:100%;" alt="Wavelet Full Comparison">
+</div>
+
+**Comparison with Original Paper Figure 8 (Octave 4)**
+<div style="text-align:center; max-width:700px; margin:auto;">
+  <img src="experient/result_analyze/figure8_comparison_octave_4.png" style="width:100%;" alt="Figure 8 Comparison">
+</div>
 
 ### Usage
 ```bash

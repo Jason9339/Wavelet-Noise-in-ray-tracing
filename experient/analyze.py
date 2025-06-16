@@ -414,17 +414,47 @@ def create_figure8_comparison(octave=4):
         print("Warning: Missing one or more data files for Figure 8 comparison. Skipping.")
         return
 
+    def plot_pattern_and_band_structure(ax_pattern, ax_band, data, title):
+        """Helper function to plot a noise pattern and its band structure side-by-side."""
+        if data is None:
+            ax_pattern.text(0.5, 0.5, 'Data\nNot Found', ha='center', va='center', color='red')
+            ax_pattern.axis('off')
+            ax_band.text(0.5, 0.5, 'Band Structure\nNot Found', ha='center', va='center', color='red')
+            ax_band.axis('off')
+            ax_pattern.set_title(title, fontsize=10)
+            return
+
+        ax_pattern.imshow(data, cmap='gray')
+        ax_pattern.set_title(title, fontsize=10)
+        ax_pattern.axis('off')
+
+        # --- Band Structure Calculation ---
+        data_centered = data - np.mean(data)
+        F = fftshift(fft2(data_centered))
+        power_spectrum = np.abs(F) ** 2
+        
+        # The key to visualizing the band is the aggressive vmax
+        if np.max(power_spectrum) > 0:
+            power_norm = power_spectrum / np.max(power_spectrum)
+            ax_band.imshow(power_norm, cmap='gray', vmin=0, vmax=1e-2)
+        else:
+            # Handle case with no power
+            ax_band.imshow(np.zeros_like(data), cmap='gray', vmin=0, vmax=1e-2)
+
+        ax_band.set_title("Band Structure", fontsize=10)
+        ax_band.axis('off')
+
     fig, axes = plt.subplots(3, 4, figsize=(12, 9))
     fig.suptitle(f'Figure 8 Replication: Perlin vs. Wavelet Noise (Octave {octave})', fontsize=16, y=0.98)
 
     axes[2, 0].remove()
     axes[2, 1].remove()
 
-    plot_pattern_and_fft(axes[0, 0], axes[0, 1], p_2d, "(a) 2D Perlin noise")
-    plot_pattern_and_fft(axes[1, 0], axes[1, 1], p_3d_slice, "(b) 2D slice through 3D Perlin noise")
-    plot_pattern_and_fft(axes[0, 2], axes[0, 3], w_2d, "(d) 2D wavelet noise")
-    plot_pattern_and_fft(axes[1, 2], axes[1, 3], w_3d_slice, "(e) 2D slice through 3D wavelet noise")
-    plot_pattern_and_fft(axes[2, 2], axes[2, 3], w_3d_proj, "(f) 3D wavelet noise projected onto 2D")
+    plot_pattern_and_band_structure(axes[0, 0], axes[0, 1], p_2d, "(a) 2D Perlin noise")
+    plot_pattern_and_band_structure(axes[1, 0], axes[1, 1], p_3d_slice, "(b) 2D slice through 3D Perlin noise")
+    plot_pattern_and_band_structure(axes[0, 2], axes[0, 3], w_2d, "(d) 2D wavelet noise")
+    plot_pattern_and_band_structure(axes[1, 2], axes[1, 3], w_3d_slice, "(e) 2D slice through 3D wavelet noise")
+    plot_pattern_and_band_structure(axes[2, 2], axes[2, 3], w_3d_proj, "(f) 3D wavelet noise projected onto 2D")
 
     plt.tight_layout(rect=[0, 0, 1, 0.95])
     output_filename = f"result_analyze/figure8_comparison_octave_{o_str}.png"
