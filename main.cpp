@@ -29,31 +29,11 @@ inline double clamp(double x, double min, double max) {
 
 const int MAX_DEPTH = 10; // 最多遞迴深度
 
-void test_fractal_noise_range() {
-    perlin noise;
-    double min_val = 1000.0;
-    double max_val = -1000.0;
-    
-    cout << "測試 fractal_noise 輸出值範圍..." << endl;
-    
-    for (int i = 0; i < 100; i++) {
-        for (int j = 0; j < 100; j++) {
-            for (int k = 0; k < 100; k++) {
-                point3 test_point(i * 0.1, j * 0.1, k * 0.1);
-                double val = noise.fractal_noise(test_point);
-                
-                if (val < min_val) min_val = val;
-                if (val > max_val) max_val = val;
-            }
-        }
-    }
-    
-    cout << "fractal_noise 值範圍:" << endl;
-    cout << "最小值: " << min_val << endl;
-    cout << "最大值: " << max_val << endl;
-    cout << "範圍: [" << min_val << ", " << max_val << "]" << endl;
-    cout << "------------------------" << endl;
-}
+// 噪聲類型枚舉
+enum NoiseType {
+    PERLIN_NOISE,
+    WAVELET_3D_NOISE
+};
 
 vec3 trace(const ray& r, const hittable_list& world, int step, int max_step) {
     if (step > max_step) {
@@ -78,9 +58,63 @@ vec3 trace(const ray& r, const hittable_list& world, int step, int max_step) {
     return rec_nearest.mat->emitted(rec_nearest.u, rec_nearest.v, rec_nearest.p);
 }
 
+shared_ptr<texture> create_noise_texture(NoiseType type, double scale = 1.0, int octave = 4) {
+    switch (type) {
+        case PERLIN_NOISE:
+            return make_shared<noise_texture>(scale, octave);
+        case WAVELET_3D_NOISE:
+            return make_shared<wavelet_texture>(scale, octave, true);
+        default:
+            return make_shared<noise_texture>(scale, octave);
+    }
+}
+
+void print_noise_options() {
+    cout << "\n=== Wavelet Noise in Ray Tracing ===" << endl;
+    cout << "可用的噪聲類型:" << endl;
+    cout << "0 - Perlin Noise" << endl;
+    cout << "1 - Wavelet 3D Noise" << endl; 
+    cout << "=================================" << endl;
+}
+
 int main() {
-    // 測試噪聲範圍
-    test_fractal_noise_range();
+    // 顯示噪聲選項
+    print_noise_options();
+    
+    // 用戶選擇噪聲類型
+    int noise_choice = 1; // 預設使用 Wavelet 3D
+    cout << "選擇噪聲類型 (0-1，預設為1): ";
+    if (!(cin >> noise_choice)) {
+        noise_choice = 1;
+        cin.clear();
+        cin.ignore(10000, '\n');
+    }
+    
+    if (noise_choice < 0 || noise_choice > 1) {
+        noise_choice = 1;
+    }
+    
+    NoiseType selected_noise = static_cast<NoiseType>(noise_choice);
+    
+    // 選擇 octave 級別（對所有噪聲類型都有效）
+    int octave_level = 4;
+    cout << "選擇 Octave 級別 (3-5，預設為4): ";
+    if (!(cin >> octave_level)) {
+        octave_level = 4;
+        cin.clear();
+        cin.ignore(10000, '\n');
+    }
+    if (octave_level < 3 || octave_level > 5) {
+        octave_level = 4;
+    }
+    
+    string noise_name;
+    switch (selected_noise) {
+        case PERLIN_NOISE: noise_name = "Perlin_octave" + to_string(octave_level); break;
+        case WAVELET_3D_NOISE: noise_name = "Wavelet3D_octave" + to_string(octave_level); break;
+    }
+    
+    cout << "\n使用噪聲類型: " << noise_name << endl;
     
     int width = 1000;
     int height = 500;
@@ -95,7 +129,7 @@ int main() {
     vec3 horizontal(4, 0, 0);
     vec3 vertical(0, 2, 0);
 
-	cout << "origin : " << origin.x() << " " << origin.y() << " " << origin.z() << endl ;
+    cout << "origin : " << origin.x() << " " << origin.y() << " " << origin.z() << endl;
 
     // 創建材質  
     auto ground_material = make_shared<lambertian>(color(0.5, 0.5, 0.5));  
@@ -106,9 +140,9 @@ int main() {
     // 創建光源材質 - 使用 diffuse_light
     auto light_material = make_shared<diffuse_light>(color(4.0, 4.0, 4.0));
     
-    // 添加 noise texture 材質
-    auto noise_tex = make_shared<noise_texture>(1.0);
-    auto noise_material = make_shared<lambertian>(noise_tex);
+    // 創建選定的噪聲紋理材質
+    auto selected_noise_tex = create_noise_texture(selected_noise, 1.0, octave_level);
+    auto noise_material = make_shared<lambertian>(selected_noise_tex);
       
     // 創建球體（使用材質）  
     hittable_list world;  
@@ -118,20 +152,32 @@ int main() {
         point3(-10, -0.5, -10),  // 平面左下角
         vec3(20, 0, 0),          // u 向量（水平方向，長度20）
         vec3(0, 0, 20),          // v 向量（深度方向，長度20）
-        noise_material           // 使用 noise 材質
+        noise_material           // 使用選定的噪聲材質
     );
     world.add(ground_quad);
     
     // 添加光源球體（參考您原本的光源位置 -10, 10, 0）
     world.add(make_shared<sphere>(vec3(-5, 5, 0), 0.8, light_material));
     
-    // 添加 noise texture 球體
+    // 添加噪聲紋理球體
     world.add(make_shared<sphere>(vec3(1, 0, -1.75), 0.5, noise_material));  
 
-    ofstream file("result/raytrace.ppm");
+    // 確保輸出目錄存在
+    system("mkdir -p result_raytracing");
+    
+    string output_ppm = "result_raytracing/raytrace_" + noise_name + ".ppm";
+    string output_png = "result_raytracing/raytrace_" + noise_name + ".png";
+
+    ofstream file(output_ppm);
     file << "P3\n" << width << " " << height << "\n255\n";
-	cout << "Processing" << endl;
+    cout << "Processing..." << endl;
+    
     for (int j = height - 1; j >= 0; --j) {
+        // 進度顯示
+        if (j % 50 == 0) {
+            cout << "進度: " << (height - 1 - j) * 100 / height << "%" << endl;
+        }
+        
         for (int i = 0; i < width; ++i) {
             vec3 color_sum(0, 0, 0);
             for (int s = 0; s < samples_per_pixel; ++s) {
@@ -156,8 +202,14 @@ int main() {
             image[index + 2] = b;
         }
     }
-    stbi_write_png("result/raytrace.png", width, height, 3, image.data(), width * 3);
-	cout << "End" << endl;
+    
+    stbi_write_png(output_png.c_str(), width, height, 3, image.data(), width * 3);
+    
+    cout << "\n=== 渲染完成 ===" << endl;
+    cout << "輸出文件:" << endl;
+    cout << "- PPM: " << output_ppm << endl;
+    cout << "- PNG: " << output_png << endl;
+    cout << "使用噪聲類型: " << noise_name << endl;
 
     return 0;
 }

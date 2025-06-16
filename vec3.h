@@ -1,14 +1,3 @@
-//==================================================================================================
-// Written in 2016 by Peter Shirley <ptrshrl@gmail.com>
-//
-// To the extent possible under law, the author(s) have dedicated all copyright and related and
-// neighboring rights to this software to the public domain worldwide. This software is distributed
-// without any warranty.
-//
-// You should have received a copy (see file COPYING.txt) of the CC0 Public Domain Dedication along
-// with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
-//==================================================================================================
-
 #ifndef VEC3H
 #define VEC3H
 
@@ -17,8 +6,6 @@
 #include <iostream>
 
 class vec3  {
-
-
 public:
     vec3() {}
     vec3(float e0, float e1, float e2) { e[0] = e0; e[1] = e1; e[2] = e2; }
@@ -45,17 +32,13 @@ public:
     inline float squared_length() const { return e[0]*e[0] + e[1]*e[1] + e[2]*e[2]; }
     inline void make_unit_vector();
     
-    // 检查向量是否接近零向量
     bool near_zero() const {
-        // 如果向量在所有维度上都接近零，则返回true
         const auto s = 1e-8;
         return (fabs(e[0]) < s) && (fabs(e[1]) < s) && (fabs(e[2]) < s);
     }
 
     float e[3];
 };
-
-
 
 inline std::istream& operator>>(std::istream &is, vec3 &t) {
     is >> t.e[0] >> t.e[1] >> t.e[2];
@@ -101,18 +84,15 @@ inline vec3 operator*(const vec3 &v, float t) {
 }
 
 inline float dot(const vec3 &v1, const vec3 &v2) {
-    //TODO 
     return v1.e[0]*v2.e[0] + v1.e[1]*v2.e[1] + v1.e[2]*v2.e[2];
 }
 
 inline vec3 cross(const vec3 &v1, const vec3 &v2) {
-    //TODO 
     float x = abs(v1.e[1]*v2.e[2] - v1.e[2]*v2.e[1]);
     float y = abs(v1.e[2]*v2.e[0] - v1.e[0]*v2.e[2]);
     float z = abs(v1.e[0]*v2.e[1] - v1.e[1]*v2.e[0]);
     return vec3(x,y,z);
 }
-
 
 inline vec3& vec3::operator+=(const vec3 &v){
     e[0]  += v.e[0];
@@ -151,7 +131,6 @@ inline vec3& vec3::operator*=(const float t) {
 
 inline vec3& vec3::operator/=(const float t) {
     float k = 1.0/t;
-
     e[0]  *= k;
     e[1]  *= k;
     e[2]  *= k;
@@ -159,7 +138,6 @@ inline vec3& vec3::operator/=(const float t) {
 }
 
 inline vec3 unit_vector(vec3 v) {
-	//TODO 
     double l = v.length();
     return vec3(v.e[0]/l, v.e[1]/l, v.e[2]/l);
 }

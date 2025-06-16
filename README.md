@@ -1,79 +1,125 @@
 # Wavelet Noise in Ray Tracing
 
-這個項目實現了經典的 Perlin 噪聲演算法，並將其應用於光線追踪渲染器中。該項目專注於光線追踪應用，使用噪聲作為材質紋理進行真實感渲染。
+這個項目實現了 Wavelet Noise 在光線追踪中的應用，展示了帶限噪聲相對於傳統 Perlin noise 的優勢。
 
-## 功能特點
+## 快速開始
 
-- **完整的 Perlin 噪聲實現** - 支援 2D 和 3D 噪聲生成
-- **分形噪聲（Fractal Noise）** - 多層疊加產生複雜的噪聲模式
-- **光線追踪應用** - 將噪聲用作材質紋理進行真實感渲染
-- **PNG 圖像輸出** - 高品質的圖像格式輸出
+### 編譯
+```bash
+make
+```
 
-## 系統需求
+### 執行
+```bash
+make run
+```
 
-- **C++ 編譯器**：支援 C++17 標準（如 `g++` 或 `clang++`）
-- **Make** 工具用於編譯
+### 生成比較
+```bash
+make compare
+```
 
-C++ 程式無需額外函式庫，僅依賴提供的原始碼檔案和標頭檔 `stb_image_write`。
+### 清理
+```bash
+make clean
+```
+
+## 使用說明
+
+### 交互式執行
+運行程序後會提示選擇：
+- 噪聲類型：0 (Perlin) 或 1 (Wavelet 3D)
+- Octave 級別：3-5 (預設為 4)
+
+### 輸出檔案
+渲染結果保存在 `result_raytracing/` 目錄：
+- `raytrace_Perlin_octave4.png`
+- `raytrace_Wavelet3D_octave4.png`
+
+### 實驗數據
+- 生成實驗數據：`cd experient && ./wavelet_noise`
+- 分析結果：`cd experient && python3 analyze.py`
+- Web 可視化：`cd threejs && python3 -m http.server 8000`
 
 ## 項目結構
 
-### 主要程式
-- **`main`** - 光線追踪渲染器，使用噪聲紋理渲染 3D 場景
-
-### 核心檔案
-- `perlin.h` - Perlin 噪聲核心實現
-- `texture.h` - 紋理系統，包含噪聲紋理
-- `material.h` - 材質系統
-- `main.cpp` - 光線追踪主程式
-
-### 其他支援檔案
-- `vec3.h`, `ray.h`, `sphere.h`, `quad.h` - 光線追踪核心類別
-- `hittable.h`, `hittable_list.h` - 物體碰撞檢測
-- `color.h`, `interval.h` - 顏色和區間工具
-- `stb_image_write.h` - PNG 圖像輸出
-
-## 編譯與執行
-
-### 編譯程式
-```bash
-make all
-# 或
-make main
+```
+├── main.cpp                    # 光線追踪主程式
+├── Makefile                    # 編譯配置
+├── WaveletNoise.h/cpp          # Wavelet noise 實現
+├── perlin.h                    # Perlin noise 實現
+├── texture.h                   # 噪聲紋理類
+├── experient/                  # 實驗和分析模組
+├── threejs/                    # Web 可視化模組
+└── result_raytracing/          # 光線追踪渲染結果
 ```
 
-### 執行光線追踪渲染
+## 系統需求
+
+- C++ 編譯器 (支援 C++17)
+- Make
+- Python 3 (用於實驗分析)
+
+---
+
+# Wavelet Noise in Ray Tracing
+
+This project implements Wavelet Noise in ray tracing, demonstrating the advantages of band-limited noise over traditional Perlin noise.
+
+## Quick Start
+
+### Compile
 ```bash
-make run  
-# 或直接執行
-./main
+make
 ```
 
-使用 `make clean` 清理執行檔和生成的圖像。
-
-## 光線追踪應用
-
-`main` 程式創建一個 3D 場景，包含：
-
-- **噪聲紋理地面** - 使用 Perlin 噪聲作為地面材質
-- **噪聲紋理球體** - 展示噪聲在曲面上的效果
-- **光源** - 提供場景照明
-- **材質系統** - 支援漫反射、金屬、電介質等材質
-
-### 輸出檔案
-- `raytrace.png` - PNG 格式的渲染結果
-- `raytrace.ppm` - PPM 格式的渲染結果
-
-## 清理與維護
-
+### Run
 ```bash
-make clean         # 清理執行檔和所有圖像
-make clean_images  # 只清理生成的圖像檔案
-make help          # 顯示所有可用命令
+make run
 ```
 
-## 相依性
+### Generate Comparison
+```bash
+make compare
+```
 
-- **STB Image Write** - 用於 PNG 圖像輸出（已包含）
-- **C++ 標準庫** - 數學函數和 I/O 操作
-- **無外部相依性** - C++ 項目完全自包含
+### Clean
+```bash
+make clean
+```
+
+## Usage
+
+### Interactive Execution
+The program will prompt you to choose:
+- Noise type: 0 (Perlin) or 1 (Wavelet 3D)
+- Octave level: 3-5 (default: 4)
+
+### Output Files
+Rendered results are saved in `result_raytracing/` directory:
+- `raytrace_Perlin_octave4.png`
+- `raytrace_Wavelet3D_octave4.png`
+
+### Experimental Data
+- Generate experimental data: `cd experient && ./wavelet_noise`
+- Analyze results: `cd experient && python3 analyze.py`
+- Web visualization: `cd threejs && python3 -m http.server 8000`
+
+## Project Structure
+
+```
+├── main.cpp                    # Ray tracing main program
+├── Makefile                    # Build configuration
+├── WaveletNoise.h/cpp          # Wavelet noise implementation
+├── perlin.h                    # Perlin noise implementation
+├── texture.h                   # Noise texture classes
+├── experient/                  # Experiment and analysis module
+├── threejs/                    # Web visualization module
+└── result_raytracing/          # Ray tracing render results
+```
+
+## Requirements
+
+- C++ compiler (C++17 support)
+- Make
+- Python 3 (for experimental analysis)
