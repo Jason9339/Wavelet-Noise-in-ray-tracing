@@ -1,125 +1,126 @@
+[[Traditional Chinese](#繁體中文)] [[English](README-en.md)]
+
 # Wavelet Noise in Ray Tracing
 
-這個項目實現了 Wavelet Noise 在光線追踪中的應用，展示了帶限噪聲相對於傳統 Perlin noise 的優勢。
-
-## 快速開始
-
-### 編譯
-```bash
-make
-```
-
-### 執行
-```bash
-make run
-```
-
-### 生成比較
-```bash
-make compare
-```
-
-### 清理
-```bash
-make clean
-```
-
-## 使用說明
-
-### 交互式執行
-運行程序後會提示選擇：
-- 噪聲類型：0 (Perlin) 或 1 (Wavelet 3D)
-- Octave 級別：3-5 (預設為 4)
-
-### 輸出檔案
-渲染結果保存在 `result_raytracing/` 目錄：
-- `raytrace_Perlin_octave4.png`
-- `raytrace_Wavelet3D_octave4.png`
-
-### 實驗數據
-- 生成實驗數據：`cd experient && ./wavelet_noise`
-- 分析結果：`cd experient && python3 analyze.py`
-- Web 可視化：`cd threejs && python3 -m http.server 8000`
-
-## 項目結構
-
-```
-├── main.cpp                    # 光線追踪主程式
-├── Makefile                    # 編譯配置
-├── WaveletNoise.h/cpp          # Wavelet noise 實現
-├── perlin.h                    # Perlin noise 實現
-├── texture.h                   # 噪聲紋理類
-├── experient/                  # 實驗和分析模組
-├── threejs/                    # Web 可視化模組
-└── result_raytracing/          # 光線追踪渲染結果
-```
-
-## 系統需求
-
-- C++ 編譯器 (支援 C++17)
-- Make
-- Python 3 (用於實驗分析)
+本專案整合了小波噪聲與光線追蹤技術，提供完整的研究與可視化工具。
 
 ---
 
-# Wavelet Noise in Ray Tracing
+## 第一部分：光線追蹤渲染
 
-This project implements Wavelet Noise in ray tracing, demonstrating the advantages of band-limited noise over traditional Perlin noise.
+### 功能說明
+用 ray tracing 方式呈現 wavelet 3D noise texture 和 Perlin 3D noise texture
 
-## Quick Start
-
-### Compile
+### 使用方式
 ```bash
+# 編譯專案
 make
-```
 
-### Run
-```bash
+# 單一結果
 make run
-```
 
-### Generate Comparison
-```bash
+# 一次生成兩個結果
 make compare
 ```
 
-### Clean
+### 渲染結果展示
+
+| Perlin Noise 光線追蹤渲染結果 | Wavelet 3D Noise 光線追蹤渲染結果 |
+|:---:|:---:|
+| <img src="result_raytracing/raytrace_Perlin_octave4.png" width="400" alt="Perlin Ray Tracing Result"> | <img src="result_raytracing/raytrace_Wavelet3D_octave4.png" width="400" alt="Wavelet 3D Ray Tracing Result"> |
+
+
+---
+
+## 第二部分：噪聲實驗與分析
+
+### 功能說明
+實驗產出接近原始論文 Figure 8 的結果，驗證 wavelet noise band-limite 的特性
+
+### 原始論文參照
+<img src="asset/wavelet%20noise%20figure8.png" width="500" alt="Wavelet Function Figure 8">
+
+<table>
+<tr>
+<td width="200px"><strong>我的實驗結果 (Octave 4)</strong></td>
+<td align="center"></td>
+</tr>
+<tr>
+<td width="200px"><strong>Perlin Noise 分析:</strong></td>
+<td></td>
+</tr>
+<tr>
+<td width="200px">Perlin 2D Noise 詳細分析 (Octave 4)</td>
+<td align="center"><img src="experient/result_analyze/perlin_noise_2D_octave_4_detailed_analysis.png" width="450" alt="Perlin 2D Analysis"></td>
+</tr>
+<tr>
+<td width="200px">Perlin 3D Sliced Noise 詳細分析 (Octave 4)</td>
+<td align="center"><img src="experient/result_analyze/perlin_noise_3Dsliced_octave_4_detailed_analysis.png" width="450" alt="Perlin 3D Sliced Analysis"></td>
+</tr>
+<tr>
+<td width="200px"><strong>Wavelet Noise 分析(此為單一頻帶結果):</strong></td>
+<td></td>
+</tr>
+<tr>
+<td width="200px">Wavelet 2D Noise 詳細分析 (Octave 4)</td>
+<td align="center"><img src="experient/result_analyze/wavelet_noise_2D_octave_4_detailed_analysis.png" width="450" alt="Wavelet 2D Analysis"></td>
+</tr>
+<tr>
+<td width="200px">Wavelet 3D Sliced Noise 詳細分析 (Octave 4)</td>
+<td align="center"><img src="experient/result_analyze/wavelet_noise_3Dsliced_octave_4_detailed_analysis.png" width="450" alt="Wavelet 3D Sliced Analysis"></td>
+</tr>
+<tr>
+<td width="200px">Wavelet 3D Projected Noise 詳細分析 (Octave 4)</td>
+<td align="center"><img src="experient/result_analyze/wavelet_noise_3Dprojected_octave_4_detailed_analysis.png" width="450" alt="Wavelet 3D Projected Analysis"></td>
+</tr>
+<tr>
+<td width="200px"><strong>整體比較分析:</strong></td>
+<td></td>
+</tr>
+<tr>
+<td width="200px">Wavelet Noise 完整比較 (Octave 4)</td>
+<td align="center"><img src="experient/result_analyze/wavelet_full_comparison_octave_4.png" width="450" alt="Wavelet Full Comparison"></td>
+</tr>
+<tr>
+<td width="200px">與原始論文 Figure 8 的比較 (Octave 4)</td>
+<td align="center"><img src="experient/result_analyze/figure8_comparison_octave_4.png" width="450" alt="Figure 8 Comparison"></td>
+</tr>
+</table>
+
+
+### 使用方式
 ```bash
-make clean
+# 進入實驗目錄並編譯
+cd experient && make
+
+# 執行噪聲實驗（生成 raw 數據）
+cd experient && make run
+
+# 分析實驗結果
+cd experient && python3 analyze.py
 ```
 
-## Usage
+---
 
-### Interactive Execution
-The program will prompt you to choose:
-- Noise type: 0 (Perlin) or 1 (Wavelet 3D)
-- Octave level: 3-5 (default: 4)
+## 第三部分：Web 可視化
 
-### Output Files
-Rendered results are saved in `result_raytracing/` directory:
-- `raytrace_Perlin_octave4.png`
-- `raytrace_Wavelet3D_octave4.png`
+### 功能說明
+提供互動式 Web 介面，讓使用者能夠即時觀察和操作噪聲效果。
 
-### Experimental Data
-- Generate experimental data: `cd experient && ./wavelet_noise`
-- Analyze results: `cd experient && python3 analyze.py`
-- Web visualization: `cd threejs && python3 -m http.server 8000`
+### 使用方式
+```bash
+# 轉換 raw 數據為 JSON 格式
+cd threejs && python3 convert_raw_to_json.py --batch
 
-## Project Structure
+# 啟動 Web 伺服器
+cd threejs && python3 -m http.server 8000
 
-```
-├── main.cpp                    # Ray tracing main program
-├── Makefile                    # Build configuration
-├── WaveletNoise.h/cpp          # Wavelet noise implementation
-├── perlin.h                    # Perlin noise implementation
-├── texture.h                   # Noise texture classes
-├── experient/                  # Experiment and analysis module
-├── threejs/                    # Web visualization module
-└── result_raytracing/          # Ray tracing render results
+# 在瀏覽器中開啟 http://localhost:8000
 ```
 
-## Requirements
+### Web 可視化結果展示
+*(原始版本具有互動功能)*
 
-- C++ compiler (C++17 support)
-- Make
-- Python 3 (for experimental analysis)
+| Perlin Noise 互動式可視化介面 | Wavelet Noise 互動式可視化介面 |
+|:---:|:---:|
+| <img src="asset/threejs_perlin.png" width="400" alt="Perlin Noise Web Visualization"> | <img src="asset/threejs_wavelet.png" width="400" alt="Wavelet Noise Web Visualization"> |
