@@ -6,7 +6,7 @@ test_noise
 *.exe
 
 # Generated images
-*.png
+# *.png
 *.ppm
 
 # Temporary files

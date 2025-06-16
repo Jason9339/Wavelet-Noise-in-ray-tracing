@@ -6,6 +6,9 @@ import os
 def load_raw_data(filename, size=256):
     """Loads a raw float32 file into a numpy array."""
     try:
+        # Add result_raw prefix if not already present
+        if not filename.startswith('result_raw/'):
+            filename = f'result_raw/{filename}'
         with open(filename, 'rb') as f:
             data = np.frombuffer(f.read(), dtype=np.float32)
         expected_size = size * size
@@ -180,11 +183,13 @@ def create_detailed_individual_analysis():
     
     # Generate detailed analysis for each existing file
     for filename, description in all_files:
-        if os.path.exists(filename):
+        # Check if file exists in result_raw directory
+        file_path = f'result_raw/{filename}' if not filename.startswith('result_raw/') else filename
+        if os.path.exists(file_path):
             print(f"   Analyzing: {description}")
             fig, peak_r = analyze_single_band(filename, description)
             if fig:
-                output_name = f'{filename.replace(".raw", "")}_detailed_analysis.png'
+                output_name = f'result_analyze/{filename.replace(".raw", "")}_detailed_analysis.png'
                 plt.savefig(output_name, dpi=150, bbox_inches='tight')
                 print(f"   → Saved: {output_name}")
                 plt.show()
@@ -215,7 +220,7 @@ def create_intgrid_comparison_figure():
     for ax in axes[:, 1]: ax.spines['left'].set_color('red'); ax.spines['left'].set_linewidth(4)
     for ax in axes[:, 2]: ax.spines['left'].set_color('blue'); ax.spines['left'].set_linewidth(4)
 
-    output_filename = "wavelet_intgrid_comparison.png"
+    output_filename = "result_analyze/wavelet_intgrid_comparison.png"
     plt.savefig(output_filename, dpi=150, bbox_inches='tight')
     print(f"\nInteger grid comparison figure saved to '{output_filename}'")
     plt.show()
@@ -315,7 +320,7 @@ def create_octave_comparison_figure(octave):
     for ax in axes[:, 1]: ax.spines['left'].set_color('red'); ax.spines['left'].set_linewidth(4)
     for ax in axes[:, 2]: ax.spines['left'].set_color('blue'); ax.spines['left'].set_linewidth(4)
 
-    output_filename = f"wavelet_full_comparison_octave_{octave}.png"
+    output_filename = f"result_analyze/wavelet_full_comparison_octave_{octave}.png"
     plt.savefig(output_filename, dpi=150, bbox_inches='tight')
     print(f"\nFull comparison figure for octave {octave} saved to '{output_filename}'")
     plt.show()
@@ -422,7 +427,7 @@ def create_figure8_comparison(octave=4):
     plot_pattern_and_fft(axes[2, 2], axes[2, 3], w_3d_proj, "(f) 3D wavelet noise projected onto 2D")
 
     plt.tight_layout(rect=[0, 0, 1, 0.95])
-    output_filename = f"figure8_comparison_octave_{o_str}.png"
+    output_filename = f"result_analyze/figure8_comparison_octave_{o_str}.png"
     plt.savefig(output_filename, dpi=150)
     print(f"   → Saved: {output_filename}")
     plt.show()
@@ -486,7 +491,7 @@ def create_figure9_comparison(octaves=[3, 4, 5]):
         axes[1].axis('off')
 
     plt.tight_layout(rect=[0, 0, 1, 0.95])
-    output_filename = "figure9_comparison.png"
+    output_filename = "result_analyze/figure9_comparison.png"
     plt.savefig(output_filename, dpi=150)
     print(f"   → Saved: {output_filename}")
     plt.show()
@@ -574,11 +579,13 @@ if __name__ == "__main__":
     
     # Generate detailed analysis for each existing file
     for filename, description in all_files:
-        if os.path.exists(filename):
+        # Check if file exists in result_raw directory
+        file_path = f'result_raw/{filename}' if not filename.startswith('result_raw/') else filename
+        if os.path.exists(file_path):
             print(f"   Analyzing: {description}")
             fig, peak_r = analyze_single_band(filename, description)
             if fig:
-                output_name = f'{filename.replace(".raw", "")}_detailed_analysis.png'
+                output_name = f'result_analyze/{filename.replace(".raw", "")}_detailed_analysis.png'
                 plt.savefig(output_name, dpi=150, bbox_inches='tight')
                 print(f"   → Saved: {output_name}")
                 plt.show()
@@ -591,9 +598,9 @@ if __name__ == "__main__":
     
     for oct in octaves_to_analyze:
         files = [
-            f"wavelet_noise_2D_octave_{oct}.raw",
-            f"wavelet_noise_3Dsliced_octave_{oct}.raw",
-            f"wavelet_noise_3Dprojected_octave_{oct}.raw"
+            f"result_raw/wavelet_noise_2D_octave_{oct}.raw",
+            f"result_raw/wavelet_noise_3Dsliced_octave_{oct}.raw",
+            f"result_raw/wavelet_noise_3Dprojected_octave_{oct}.raw"
         ]
         if all(os.path.exists(f) for f in files):
             available_octaves.append(oct)
@@ -607,11 +614,11 @@ if __name__ == "__main__":
     
     print("\n" + "=" * 80)
     print("ENHANCED ANALYSIS COMPLETE")
-    print("Generated outputs:")
-    print("• Figure 8 comparison (figure8_comparison_octave_4.png)")
-    print("• Figure 9 comparison (figure9_comparison.png)")
-    print("• Detailed individual analysis (*_detailed_analysis.png)")
-    print("• Wavelet octave comparisons (wavelet_full_comparison_octave_*.png)")
+    print("Generated outputs in result_analyze/:")
+    print("• Figure 8 comparison (result_analyze/figure8_comparison_octave_4.png)")
+    print("• Figure 9 comparison (result_analyze/figure9_comparison.png)")
+    print("• Detailed individual analysis (result_analyze/*_detailed_analysis.png)")
+    print("• Wavelet octave comparisons (result_analyze/wavelet_full_comparison_octave_*.png)")
     print(f"\nKey observations from paper replication:")
     print("• Figure 8: Shows band-limiting differences between Perlin and Wavelet noise")
     print("• Figure 9: Demonstrates frequency band separation in RGB colormap")
