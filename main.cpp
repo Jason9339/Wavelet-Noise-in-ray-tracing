@@ -16,7 +16,6 @@
 #include "material.h"
 #include "quad.h"
 #include "perlin.h"
-#include "noise_utils.h"
 
 using namespace std;
 

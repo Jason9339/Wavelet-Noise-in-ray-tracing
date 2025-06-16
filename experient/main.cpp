@@ -6,6 +6,7 @@
 #include <vector>
 #include <algorithm>
 #include <string>
+#include <sys/stat.h>
 
 void generate2DOctaveBandNoise(int imageSize, int octave, const std::string& outputFile, WaveletNoise& noise) {
     std::vector<float> image(imageSize * imageSize);
@@ -129,6 +130,8 @@ void generatePerlinNoise3DSliced(int imageSize, int octave, const std::string& o
 
 int main() {
     std::cout << "=== Wavelet & Perlin Noise Comparison Generation ===" << std::endl;
+
+    mkdir("result_raw", 0755);
     
     const int IMAGE_SIZE = 256;
     const int TILE_SIZE = 128;
@@ -149,12 +152,12 @@ int main() {
         std::cout << "\n--- Generating Data for Octave " << octave << " ---" << std::endl;
         std::string o_str = std::to_string(octave);
 
-        generate2DOctaveBandNoise(IMAGE_SIZE, octave, "wavelet_noise_2D_octave_" + o_str + ".raw", noise2D);
-        generate3DSlicedOctaveBandNoise(IMAGE_SIZE, octave, "wavelet_noise_3Dsliced_octave_" + o_str + ".raw", noise3D);
-        generate3DProjectedOctaveBandNoise(IMAGE_SIZE, octave, "wavelet_noise_3Dprojected_octave_" + o_str + ".raw", noise3D);
+        generate2DOctaveBandNoise(IMAGE_SIZE, octave, "result_raw/wavelet_noise_2D_octave_" + o_str + ".raw", noise2D);
+        generate3DSlicedOctaveBandNoise(IMAGE_SIZE, octave, "result_raw/wavelet_noise_3Dsliced_octave_" + o_str + ".raw", noise3D);
+        generate3DProjectedOctaveBandNoise(IMAGE_SIZE, octave, "result_raw/wavelet_noise_3Dprojected_octave_" + o_str + ".raw", noise3D);
 
-        generatePerlinNoise2D(IMAGE_SIZE, octave, "perlin_noise_2D_octave_" + o_str + ".raw", perlin);
-        generatePerlinNoise3DSliced(IMAGE_SIZE, octave, "perlin_noise_3Dsliced_octave_" + o_str + ".raw", perlin);
+        generatePerlinNoise2D(IMAGE_SIZE, octave, "result_raw/perlin_noise_2D_octave_" + o_str + ".raw", perlin);
+        generatePerlinNoise3DSliced(IMAGE_SIZE, octave, "result_raw/perlin_noise_3Dsliced_octave_" + o_str + ".raw", perlin);
     }
 
     std::cout << "\n=== Generation Complete ===" << std::endl;
