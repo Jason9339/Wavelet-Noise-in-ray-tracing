@@ -70,7 +70,6 @@ def plot_noise_column(ax_col, data, title):
         ax.axvline(peak_freq, color='r', linestyle='--', linewidth=1, label=f'Peak~{peak_freq:.3f}')
         ax.legend(fontsize=7)
     
-    # Set y-label only for the first column of each type
     if ax.get_subplotspec().colspan.start == 0:
         ax_col[0].set_ylabel('Noise\nPattern', fontsize=9, rotation=0, ha='right', va='center', labelpad=25)
         ax_col[1].set_ylabel('Power\nSpectrum', fontsize=9, rotation=0, ha='right', va='center', labelpad=25)
@@ -156,7 +155,7 @@ def analyze_single_band(filename, title):
 
 def create_detailed_individual_analysis():
     """Generate detailed 5-column analysis for all available files"""
-    print("\n🔬 Generating Detailed Individual Analysis (5-Column Layout)...")
+    print("\nGenerating Detailed Individual Analysis (5-Column Layout)...")
     
     # All possible files to analyze
     all_files = []
@@ -190,7 +189,7 @@ def create_detailed_individual_analysis():
                 print(f"   → Saved: {output_name}")
                 plt.show()
         else:
-            print(f"   ⚠️  Skipping {description}: file not found")
+            print(f"   Warning: Skipping {description}: file not found")
 
 def create_intgrid_comparison_figure():
     """Generates the comparison figure for the integer grid sampling test."""
@@ -364,13 +363,9 @@ def get_power_spectrum(data):
     """Computes the log-scaled power spectrum of a 2D array."""
     if data is None:
         return None
-    # 確保資料中心化以移除直流分量在頻譜中的影響
     data_centered = data - np.mean(data)
-    # 計算傅立葉變換並將零頻率移到中心
     F = fftshift(fft2(data_centered))
-    # 計算功率譜 (振幅的平方)
     power_spectrum = np.abs(F) ** 2
-    # 使用對數尺度以便觀察，並加上 1 防止 log(0)
     return np.log1p(power_spectrum)
 
 def plot_pattern_and_fft(ax_pattern, ax_fft, data, title):
@@ -400,10 +395,9 @@ def create_figure8_comparison(octave=4):
     Recreates the layout and spirit of Figure 8 from the paper,
     comparing Perlin and Wavelet noise side-by-side.
     """
-    print(f"\n🔬 Generating Figure 8 comparison for Octave {octave}...")
+    print(f"\nGenerating Figure 8 comparison for Octave {octave}...")
     o_str = str(octave)
     
-    # 載入所有需要的數據
     p_2d = load_raw_data(f"perlin_noise_2D_octave_{o_str}.raw")
     p_3d_slice = load_raw_data(f"perlin_noise_3Dsliced_octave_{o_str}.raw")
     
@@ -411,31 +405,20 @@ def create_figure8_comparison(octave=4):
     w_3d_slice = load_raw_data(f"wavelet_noise_3Dsliced_octave_{o_str}.raw")
     w_3d_proj = load_raw_data(f"wavelet_noise_3Dprojected_octave_{o_str}.raw")
 
-    # 檢查是否有檔案缺失
     if any(d is None for d in [p_2d, p_3d_slice, w_2d, w_3d_slice, w_3d_proj]):
-        print("⚠️  Missing one or more data files for Figure 8 comparison. Skipping.")
+        print("Warning: Missing one or more data files for Figure 8 comparison. Skipping.")
         return
 
     fig, axes = plt.subplots(3, 4, figsize=(12, 9))
     fig.suptitle(f'Figure 8 Replication: Perlin vs. Wavelet Noise (Octave {octave})', fontsize=16, y=0.98)
 
-    # 清除不需要的子圖
     axes[2, 0].remove()
     axes[2, 1].remove()
 
-    # (a) 2D Perlin noise
     plot_pattern_and_fft(axes[0, 0], axes[0, 1], p_2d, "(a) 2D Perlin noise")
-    
-    # (b) 2D slice through 3D Perlin noise
     plot_pattern_and_fft(axes[1, 0], axes[1, 1], p_3d_slice, "(b) 2D slice through 3D Perlin noise")
-    
-    # (d) 2D wavelet noise
     plot_pattern_and_fft(axes[0, 2], axes[0, 3], w_2d, "(d) 2D wavelet noise")
-    
-    # (e) 2D slice through 3D wavelet noise
     plot_pattern_and_fft(axes[1, 2], axes[1, 3], w_3d_slice, "(e) 2D slice through 3D wavelet noise")
-    
-    # (f) 3D wavelet noise projected onto 2D
     plot_pattern_and_fft(axes[2, 2], axes[2, 3], w_3d_proj, "(f) 3D wavelet noise projected onto 2D")
 
     plt.tight_layout(rect=[0, 0, 1, 0.95])
@@ -449,7 +432,7 @@ def create_figure9_comparison(octaves=[3, 4, 5]):
     Recreates the spirit of Figure 9 from the paper by visualizing
     the separation of frequency bands.
     """
-    print(f"\n🔬 Generating Figure 9 comparison for Octaves {octaves}...")
+    print(f"\nGenerating Figure 9 comparison for Octaves {octaves}...")
     
     fig, axes = plt.subplots(1, 2, figsize=(10, 5))
     fig.suptitle('Figure 9 Replication: Frequency Band Separation', fontsize=16, y=1.02)
@@ -459,20 +442,17 @@ def create_figure9_comparison(octaves=[3, 4, 5]):
     for o in octaves:
         data = load_raw_data(f"perlin_noise_2D_octave_{o}.raw")
         if data is None: 
-            print("⚠️  Missing Perlin data for Figure 9. Skipping Perlin plot.")
+            print("Warning: Missing Perlin data for Figure 9. Skipping Perlin plot.")
             perlin_bands = None
             break
-        # 計算振幅譜 (非功率譜)
         F = fftshift(fft2(data - np.mean(data)))
         perlin_bands.append(np.abs(F))
         
     if perlin_bands:
-        # 將不同頻帶的振幅譜分配到 RGB 通道
-        # 低頻 (octave 3) -> Blue, 中頻 (octave 4) -> Green, 高頻 (octave 5) -> Red
         rgb_fft_perlin = np.stack([
-            perlin_bands[2] / np.max(perlin_bands[2]), # Red
-            perlin_bands[1] / np.max(perlin_bands[1]), # Green
-            perlin_bands[0] / np.max(perlin_bands[0])  # Blue
+            perlin_bands[2] / np.max(perlin_bands[2]),
+            perlin_bands[1] / np.max(perlin_bands[1]),
+            perlin_bands[0] / np.max(perlin_bands[0])
         ], axis=-1)
         axes[0].imshow(rgb_fft_perlin)
         axes[0].set_title("(a) Perlin Noise Bands FFT")
@@ -486,7 +466,7 @@ def create_figure9_comparison(octaves=[3, 4, 5]):
     for o in octaves:
         data = load_raw_data(f"wavelet_noise_2D_octave_{o}.raw")
         if data is None: 
-            print("⚠️  Missing Wavelet data for Figure 9. Skipping Wavelet plot.")
+            print("Warning: Missing Wavelet data for Figure 9. Skipping Wavelet plot.")
             wavelet_bands = None
             break
         F = fftshift(fft2(data - np.mean(data)))
@@ -494,9 +474,9 @@ def create_figure9_comparison(octaves=[3, 4, 5]):
         
     if wavelet_bands:
         rgb_fft_wavelet = np.stack([
-            wavelet_bands[2] / np.max(wavelet_bands[2]), # Red
-            wavelet_bands[1] / np.max(wavelet_bands[1]), # Green
-            wavelet_bands[0] / np.max(wavelet_bands[0])  # Blue
+            wavelet_bands[2] / np.max(wavelet_bands[2]),
+            wavelet_bands[1] / np.max(wavelet_bands[1]),
+            wavelet_bands[0] / np.max(wavelet_bands[0])
         ], axis=-1)
         axes[1].imshow(rgb_fft_wavelet)
         axes[1].set_title("(b) Wavelet Noise Bands FFT")
@@ -570,7 +550,7 @@ if __name__ == "__main__":
     create_figure9_comparison(octaves=[3, 4, 5])
     
     # Generate detailed individual analysis for all files
-    print("\n🔬 Generating Detailed Individual Analysis (5-Column Layout)...")
+    print("\nGenerating Detailed Individual Analysis (5-Column Layout)...")
     
     # All possible files to analyze (including Perlin noise now)
     all_files = []
@@ -603,7 +583,7 @@ if __name__ == "__main__":
                 print(f"   → Saved: {output_name}")
                 plt.show()
         else:
-            print(f"   ⚠️  Skipping {description}: file not found")
+            print(f"   Warning: Skipping {description}: file not found")
     
     # Check for standard octave files and generate comparisons
     octaves_to_analyze = [3, 4, 5]
@@ -619,11 +599,11 @@ if __name__ == "__main__":
             available_octaves.append(oct)
     
     if available_octaves:
-        print(f"\n🔍 Generating Wavelet Octave Comparisons for octaves: {available_octaves}")
+        print(f"\nGenerating Wavelet Octave Comparisons for octaves: {available_octaves}")
         for oct in available_octaves:
             create_octave_comparison_figure(oct)
     else:
-        print("\n⚠️  No complete wavelet octave datasets found, skipping octave analysis.")
+        print("\nWarning: No complete wavelet octave datasets found, skipping octave analysis.")
     
     print("\n" + "=" * 80)
     print("ENHANCED ANALYSIS COMPLETE")

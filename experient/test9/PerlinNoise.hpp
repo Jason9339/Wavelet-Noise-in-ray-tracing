@@ -1,8 +1,3 @@
-// PerlinNoise.hpp
-// A header-only Perlin noise library for C++11
-// Based on the improved noise algorithm by Ken Perlin.
-// This is a derivative of the work by Ryo Suzuki (https://github.com/Reputeless/PerlinNoise)
-
 #ifndef PERLINNOISE_HPP
 #define PERLINNOISE_HPP
 
@@ -65,4 +60,4 @@ public:
     }
 };
 
-#endif // PERLINNOISE_HPP
+#endif

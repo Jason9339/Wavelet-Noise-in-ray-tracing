@@ -5,7 +5,7 @@
 #include <random>
 #include <string>
 #include <limits>
-#include <iostream> // For stats output
+#include <iostream>
 
 // Statistical analysis structure
 struct DataStats {
@@ -58,4 +58,4 @@ private:
     void upsample1D(const std::vector<float>& from, std::vector<float>& to, int n, int stride);
 };
 
-#endif // WAVELET_NOISE_H
+#endif
