@@ -25,6 +25,7 @@ run_main: main
 clean:
 	rm -f test_noise main
 	rm -f *.png *.ppm
+	rm -f result/*.png result/*.ppm
 
 # 清理所有輸出圖像
 clean_images:

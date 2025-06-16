@@ -112,5 +112,16 @@ void generate_wavelet_noise_3d_single_band_projected_image(
     int tile_size = 32
 );
 
+// +++ 新增函數聲明 +++
+// Generates an image representing a single, non-repeating tile of 2D Wavelet Noise
+void generate_wavelet_noise_2d_single_tile_image(
+    int image_size,         // Width and height of the output image, should ideally match tile_size_for_generator
+    double input_coord_scale, // Scale factor for the input coordinates to WNoise2D, controls "frequency"
+    const std::string& filename,
+    int tile_size_for_generator // The tile size used to initialize the wavelet_noise_2d generator
+);
+// +++ 新增函數聲明結束 +++
+
 
 #endif
+// --- END OF FILE noise_utils.h ---
