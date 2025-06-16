@@ -40,18 +40,38 @@ make compare
 
 ## 第二部分：噪聲實驗與分析
 
-### 功能說明
+### 實驗說明
 實驗產出接近原始論文 Figure 8 的結果，驗證 wavelet noise band-limited 的特性
 
-### 原始論文參照
+### Figure 8 比較
 
-<div style="text-align:center; max-width:500px; margin:auto;">
-  <img src="asset/wavelet%20noise%20figure8.png" style="width:100%;" alt="Wavelet Function Figure 8">
+<div style="display:flex; flex-wrap:wrap; gap:20px; justify-content:center; align-items:flex-start;">
+  <div style="flex:1; min-width:300px; max-width:400px; text-align:center;">
+    <strong>原始論文 Figure 8</strong><br>
+    <img src="asset/wavelet%20noise%20figure8.png" style="width:100%;" alt="Wavelet Function Figure 8">
+  </div>
+  <div style="flex:1; min-width:300px; max-width:400px; text-align:center;">
+    <strong>我的實驗結果 (對比 Figure 8)</strong><br>
+    <img src="experient/result_analyze/figure8_comparison_octave_4.png" style="width:100%;" alt="Figure 8 Comparison">
+  </div>
+</div>
+
+### Figure 9 比較
+
+<div style="display:flex; flex-wrap:wrap; gap:20px; justify-content:center; align-items:flex-start;">
+  <div style="flex:1; min-width:300px; max-width:400px; text-align:center;">
+    <strong>原始論文 Figure 9</strong><br>
+    <img src="asset/wavelet%20noise%20figure9.png" style="width:100%;" alt="Wavelet Function Figure 9">
+  </div>
+  <div style="flex:1; min-width:300px; max-width:400px; text-align:center;">
+    <strong>我的實驗結果 (對比 Figure 9)</strong><br>
+    <img src="experient/result_analyze/figure9_comparison.png" style="width:100%;" alt="Figure 9 Comparison">
+  </div>
 </div>
 
 ---
 
-### 我的實驗結果 (Octave 4)
+### 詳細實驗結果 (Octave 4)
 
 #### Perlin Noise 分析：
 
@@ -93,17 +113,13 @@ make compare
   <img src="experient/result_analyze/wavelet_full_comparison_octave_4.png" style="width:100%;" alt="Wavelet Full Comparison">
 </div>
 
-**與原始論文 Figure 8 的比較 (Octave 4)**  
-<div style="text-align:center; max-width:700px; margin:auto;">
-  <img src="experient/result_analyze/figure8_comparison_octave_4.png" style="width:100%;" alt="Figure 8 Comparison">
-</div>
-
 ---
 
 ### 使用方式
 ```bash
 # 進入實驗目錄並編譯
-cd experient && make
+cd experient 
+make
 
 # 執行噪聲實驗（生成 raw 數據）
 make run
@@ -122,10 +138,11 @@ python3 analyze.py
 ### 使用方式
 ```bash
 # 轉換 raw 數據為 JSON 格式
-cd threejs && python3 convert_raw_to_json.py --batch
+cd threejs
+python3 convert_raw_to_json.py --batch
 
 # 啟動 Web 伺服器
-cd threejs && python3 -m http.server 8000
+python3 -m http.server 8000
 
 # 在瀏覽器中開啟 http://localhost:8000
 ```

@@ -48,10 +48,35 @@ make compare
 ### Description
 Experiments produce results close to the original paper's Figure 8, validating the band-limited characteristics of wavelet noise.
 
-### Original Paper Reference
-<img src="asset/wavelet%20noise%20figure8.png" width="500" alt="Wavelet Function Figure 8">
+### Figure 8 Comparison
 
-### My Experimental Results (Octave 4)
+<div style="display:flex; flex-wrap:wrap; gap:20px; justify-content:center; align-items:flex-start;">
+  <div style="flex:1; min-width:300px; max-width:400px; text-align:center;">
+    <strong>Original Paper Figure 8</strong><br>
+    <img src="asset/wavelet%20noise%20figure8.png" style="width:100%;" alt="Wavelet Function Figure 8">
+  </div>
+  <div style="flex:1; min-width:300px; max-width:400px; text-align:center;">
+    <strong>My Experimental Results (Comparison with Figure 8)</strong><br>
+    <img src="experient/result_analyze/figure8_comparison_octave_4.png" style="width:100%;" alt="Figure 8 Comparison">
+  </div>
+</div>
+
+### Figure 9 Comparison
+
+<div style="display:flex; flex-wrap:wrap; gap:20px; justify-content:center; align-items:flex-start;">
+  <div style="flex:1; min-width:300px; max-width:400px; text-align:center;">
+    <strong>Original Paper Figure 9</strong><br>
+    <img src="asset/wavelet%20noise%20figure9.png" style="width:100%;" alt="Wavelet Function Figure 9">
+  </div>
+  <div style="flex:1; min-width:300px; max-width:400px; text-align:center;">
+    <strong>My Experimental Results (Comparison with Figure 9)</strong><br>
+    <img src="experient/result_analyze/figure9_comparison.png" style="width:100%;" alt="Figure 9 Comparison">
+  </div>
+</div>
+
+---
+
+### Detailed Experimental Results (Octave 4)
 
 #### Perlin Noise Analysis:
 
@@ -91,11 +116,6 @@ Experiments produce results close to the original paper's Figure 8, validating t
 **Wavelet Noise Complete Comparison (Octave 4)**
 <div style="text-align:center; max-width:700px; margin:auto;">
   <img src="experient/result_analyze/wavelet_full_comparison_octave_4.png" style="width:100%;" alt="Wavelet Full Comparison">
-</div>
-
-**Comparison with Original Paper Figure 8 (Octave 4)**
-<div style="text-align:center; max-width:700px; margin:auto;">
-  <img src="experient/result_analyze/figure8_comparison_octave_4.png" style="width:100%;" alt="Figure 8 Comparison">
 </div>
 
 ### Usage
