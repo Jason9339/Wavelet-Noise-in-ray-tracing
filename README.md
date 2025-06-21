@@ -42,32 +42,38 @@ make compare
 
 ### 實驗說明
 實驗產出接近原始論文 Figure 8 的結果，驗證 wavelet noise band-limited 的特性
+成功證明以下幾點:
+
 
 ### Figure 8 比較
 
-<div style="display:flex; flex-wrap:wrap; gap:20px; justify-content:center; align-items:flex-start;">
-  <div style="flex:1; min-width:300px; max-width:400px; text-align:center;">
-    <strong>原始論文 Figure 8</strong><br>
-    <img src="asset/wavelet%20noise%20figure8.png" style="width:100%;" alt="Wavelet Function Figure 8">
-  </div>
-  <div style="flex:1; min-width:300px; max-width:400px; text-align:center;">
-    <strong>我的實驗結果 (對比 Figure 8)</strong><br>
-    <img src="experient/result_analyze/figure8_comparison_octave_4.png" style="width:100%;" alt="Figure 8 Comparison">
-  </div>
-</div>
+<table>
+<tr>
+<td align="center" width="50%">
+<strong>原始論文 Figure 8</strong><br>
+<img src="asset/wavelet%20noise%20figure8.png" width="400" alt="Wavelet Function Figure 8">
+</td>
+<td align="center" width="50%">
+<strong>我的實驗結果 (對比 Figure 8)</strong><br>
+<img src="experient/result_analyze/figure8_comparison_octave_4.png" width="400" alt="Figure 8 Comparison">
+</td>
+</tr>
+</table>
 
 ### Figure 9 比較
 
-<div style="display:flex; flex-wrap:wrap; gap:20px; justify-content:center; align-items:flex-start;">
-  <div style="flex:1; min-width:300px; max-width:400px; text-align:center;">
-    <strong>原始論文 Figure 9</strong><br>
-    <img src="asset/wavelet%20noise%20figure9.png" style="width:100%;" alt="Wavelet Function Figure 9">
-  </div>
-  <div style="flex:1; min-width:300px; max-width:400px; text-align:center;">
-    <strong>我的實驗結果 (對比 Figure 9)</strong><br>
-    <img src="experient/result_analyze/figure9_comparison.png" style="width:100%;" alt="Figure 9 Comparison">
-  </div>
-</div>
+<table>
+<tr>
+<td align="center" width="50%">
+<strong>原始論文 Figure 9</strong><br>
+<img src="asset/wavelet%20noise%20figure9.png" width="400" alt="Wavelet Function Figure 9">
+</td>
+<td align="center" width="50%">
+<strong>我的實驗結果 (對比 Figure 9)</strong><br>
+<img src="experient/result_analyze/figure9_comparison.png" width="400" alt="Figure 9 Comparison">
+</td>
+</tr>
+</table>
 
 ---
 
@@ -75,12 +81,13 @@ make compare
 
 #### Perlin Noise 分析：
 
-**Perlin 2D Noise 詳細分析 (Octave 4)**  
+**Perlin 2D Noise 詳細分析 (Octave 4) :** 驗證 perlin noise 沒有 band limit 特性 
+
 <div style="text-align:center; max-width:700px; margin:auto;">
   <img src="experient/result_analyze/perlin_noise_2D_octave_4_detailed_analysis.png" style="width:100%;" alt="Perlin 2D Analysis">
 </div>
 
-**Perlin 3D Sliced Noise 詳細分析 (Octave 4)**  
+**Perlin 3D Sliced Noise 詳細分析 (Octave 4) :** 驗證 perlin noise 從 3D 切出 2D 平面不具備 band-limit 特性
 <div style="text-align:center; max-width:700px; margin:auto;">
   <img src="experient/result_analyze/perlin_noise_3Dsliced_octave_4_detailed_analysis.png" style="width:100%;" alt="Perlin 3D Sliced Analysis">
 </div>
@@ -89,12 +96,12 @@ make compare
 
 #### Wavelet Noise 分析（單一頻帶）：
 
-**Wavelet 2D Noise 詳細分析 (Octave 4)**  
+**Wavelet 2D Noise 詳細分析 (Octave 4) :** 驗證 wavelet noise 有 band limit 特性    
 <div style="text-align:center; max-width:700px; margin:auto;">
   <img src="experient/result_analyze/wavelet_noise_2D_octave_4_detailed_analysis.png" style="width:100%;" alt="Wavelet 2D Analysis">
 </div>
 
-**Wavelet 3D Sliced Noise 詳細分析 (Octave 4)**  
+**Wavelet 3D Sliced Noise 詳細分析 (Octave 4) :** 驗證 wavelet noise 從 3D 切出 2D 平面不具備 band-limit 特性  
 <div style="text-align:center; max-width:700px; margin:auto;">
   <img src="experient/result_analyze/wavelet_noise_3Dsliced_octave_4_detailed_analysis.png" style="width:100%;" alt="Wavelet 3D Sliced Analysis">
 </div>
