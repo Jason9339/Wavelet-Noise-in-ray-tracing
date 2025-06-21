@@ -4,12 +4,16 @@
 
 本專案整合了小波噪聲與光線追蹤技術，提供完整的研究與可視化工具。
 
+![實驗說明](./asset/實驗說明.png)
+
 ---
 
 ## 第一部分：光線追蹤渲染
 
 ### 功能說明
 用 ray tracing 方式呈現 wavelet 3D noise texture 和 Perlin 3D noise texture
+
+> 本部分的光線追蹤實作基於 [Ray Tracing in One Weekend Series](https://github.com/RayTracing/raytracing.github.io) 進行開發
 
 ### 使用方式
 ```bash
@@ -166,3 +170,13 @@ python3 -m http.server 8000
     <img src="asset/threejs_wavelet.png" style="width:100%;" alt="Wavelet Noise Web Visualization">
   </div>
 </div>
+
+---
+
+## 參考文獻
+
+### 光線追蹤實作參考
+- [Ray Tracing in One Weekend Series](https://github.com/RayTracing/raytracing.github.io) - 光線追蹤的基礎實作與理論參考
+
+### 相關論文
+- **Wavelet Noise** - [PDF](./wavelet_noise.pdf) - 本專案實作的 Wavelet Noise 演算法理論基礎與實驗驗證參考

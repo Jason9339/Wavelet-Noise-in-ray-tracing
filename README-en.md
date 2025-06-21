@@ -23,6 +23,8 @@ make
 ### Description
 Render wavelet 3D noise texture and Perlin 3D noise texture using ray tracing techniques.
 
+> This ray tracing implementation is based on [Ray Tracing in One Weekend Series](https://github.com/RayTracing/raytracing.github.io)
+
 ### Usage
 ```bash
 # Build project
@@ -157,4 +159,14 @@ cd threejs && python3 -m http.server 8000
 
 | Perlin Noise Interactive Visualization Interface | Wavelet Noise Interactive Visualization Interface |
 |:---:|:---:|
-| <img src="asset/threejs_perlin.png" width="400" alt="Perlin Noise Web Visualization"> | <img src="asset/threejs_wavelet.png" width="400" alt="Wavelet Noise Web Visualization"> | 
+| <img src="asset/threejs_perlin.png" width="400" alt="Perlin Noise Web Visualization"> | <img src="asset/threejs_wavelet.png" width="400" alt="Wavelet Noise Web Visualization"> |
+
+---
+
+## References
+
+### Ray Tracing Implementation Reference
+- [Ray Tracing in One Weekend Series](https://github.com/RayTracing/raytracing.github.io) - Fundamental ray tracing implementation and theoretical reference
+
+### Related Papers
+- **Wavelet Noise** - [PDF](./wavelet_noise.pdf) - Theoretical foundation and experimental validation reference for the Wavelet Noise algorithm implemented in this project 
