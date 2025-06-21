@@ -46,6 +46,8 @@ make compare
 
 
 ### Figure 8 比較
+> 註: 為甚麼我的實做沒有 white noise ? 
+> 原始論文只提到他使用 FFT，但根據實驗結果，我推測論文可能有加上正規化、對比增強、閾值處理...等其他操作，並且目前還無法解釋為什麼原始論文 white noise 的頻率域會是圓的且高頻部分是黑的(應該要是低頻道高頻都有)
 
 <table>
 <tr>
@@ -81,13 +83,13 @@ make compare
 
 #### Perlin Noise 分析：
 
-**Perlin 2D Noise 詳細分析 (Octave 4) :** 驗證 perlin noise 沒有 band limit 特性 
+* Perlin 2D Noise 詳細分析 (Octave 4) : 驗證 perlin noise 沒有 band limit 特性 
 
 <div style="text-align:center; max-width:700px; margin:auto;">
   <img src="experient/result_analyze/perlin_noise_2D_octave_4_detailed_analysis.png" style="width:100%;" alt="Perlin 2D Analysis">
 </div>
 
-**Perlin 3D Sliced Noise 詳細分析 (Octave 4) :** 驗證 perlin noise 從 3D 切出 2D 平面不具備 band-limit 特性
+* Perlin 3D Sliced Noise 詳細分析 : 驗證 perlin noise 從 3D 切出 2D 平面不具備 band-limit 特性
 <div style="text-align:center; max-width:700px; margin:auto;">
   <img src="experient/result_analyze/perlin_noise_3Dsliced_octave_4_detailed_analysis.png" style="width:100%;" alt="Perlin 3D Sliced Analysis">
 </div>
@@ -96,17 +98,17 @@ make compare
 
 #### Wavelet Noise 分析（單一頻帶）：
 
-**Wavelet 2D Noise 詳細分析 (Octave 4) :** 驗證 wavelet noise 有 band limit 特性    
+* Wavelet 2D Noise 分析 : 驗證 wavelet noise 有 band limit 特性    
 <div style="text-align:center; max-width:700px; margin:auto;">
   <img src="experient/result_analyze/wavelet_noise_2D_octave_4_detailed_analysis.png" style="width:100%;" alt="Wavelet 2D Analysis">
 </div>
 
-**Wavelet 3D Sliced Noise 詳細分析 (Octave 4) :** 驗證 wavelet noise 從 3D 切出 2D 平面不具備 band-limit 特性  
+* Wavelet 3D Sliced Noise 分析 : 驗證 wavelet noise 從 3D 切出 2D 平面不具備 band-limit 特性  
 <div style="text-align:center; max-width:700px; margin:auto;">
   <img src="experient/result_analyze/wavelet_noise_3Dsliced_octave_4_detailed_analysis.png" style="width:100%;" alt="Wavelet 3D Sliced Analysis">
 </div>
 
-**Wavelet 3D Projected Noise 詳細分析 (Octave 4) :**驗證 3D project 到 2D 的 noise 具有 band-limit 特性(but not perfect)  
+* Wavelet 3D Projected Noise 詳細分析 (Octave 4) : 驗證 3D project 到 2D 的 noise 具有 band-limit 特性(but not perfect)  
 <div style="text-align:center; max-width:700px; margin:auto;">
   <img src="experient/result_analyze/wavelet_noise_3Dprojected_octave_4_detailed_analysis.png" style="width:100%;" alt="Wavelet 3D Projected Analysis">
 </div>
