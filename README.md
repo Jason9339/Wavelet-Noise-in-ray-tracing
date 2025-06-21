@@ -106,7 +106,7 @@ make compare
   <img src="experient/result_analyze/wavelet_noise_3Dsliced_octave_4_detailed_analysis.png" style="width:100%;" alt="Wavelet 3D Sliced Analysis">
 </div>
 
-**Wavelet 3D Projected Noise 詳細分析 (Octave 4)**  
+**Wavelet 3D Projected Noise 詳細分析 (Octave 4) :**驗證 3D project 到 2D 的 noise 具有 band-limit 特性(but not perfect)  
 <div style="text-align:center; max-width:700px; margin:auto;">
   <img src="experient/result_analyze/wavelet_noise_3Dprojected_octave_4_detailed_analysis.png" style="width:100%;" alt="Wavelet 3D Projected Analysis">
 </div>
