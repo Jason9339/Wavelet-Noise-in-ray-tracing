@@ -49,30 +49,36 @@ make compare
 Experiments produce results close to the original paper's Figure 8, validating the band-limited characteristics of wavelet noise.
 
 ### Figure 8 Comparison
+> Note: Why doesn't my implementation have white noise?
+> The original paper only mentions using FFT, but based on experimental results, I speculate that the paper might have added normalization, contrast enhancement, threshold processing, and other operations. Currently, I cannot explain why the frequency domain of white noise in the original paper is circular with black high-frequency parts (it should have both low and high frequencies).
 
-<div style="display:flex; flex-wrap:wrap; gap:20px; justify-content:center; align-items:flex-start;">
-  <div style="flex:1; min-width:300px; max-width:400px; text-align:center;">
-    <strong>Original Paper Figure 8</strong><br>
-    <img src="asset/wavelet%20noise%20figure8.png" style="width:100%;" alt="Wavelet Function Figure 8">
-  </div>
-  <div style="flex:1; min-width:300px; max-width:400px; text-align:center;">
-    <strong>My Experimental Results (Comparison with Figure 8)</strong><br>
-    <img src="experient/result_analyze/figure8_comparison_octave_4.png" style="width:100%;" alt="Figure 8 Comparison">
-  </div>
-</div>
+<table>
+<tr>
+<td align="center" width="50%">
+<strong>Original Paper Figure 8</strong><br>
+<img src="asset/wavelet%20noise%20figure8.png" width="400" alt="Wavelet Function Figure 8">
+</td>
+<td align="center" width="50%">
+<strong>My Experimental Results (Comparison with Figure 8)</strong><br>
+<img src="experient/result_analyze/figure8_comparison_octave_4.png" width="400" alt="Figure 8 Comparison">
+</td>
+</tr>
+</table>
 
 ### Figure 9 Comparison
 
-<div style="display:flex; flex-wrap:wrap; gap:20px; justify-content:center; align-items:flex-start;">
-  <div style="flex:1; min-width:300px; max-width:400px; text-align:center;">
-    <strong>Original Paper Figure 9</strong><br>
-    <img src="asset/wavelet%20noise%20figure9.png" style="width:100%;" alt="Wavelet Function Figure 9">
-  </div>
-  <div style="flex:1; min-width:300px; max-width:400px; text-align:center;">
-    <strong>My Experimental Results (Comparison with Figure 9)</strong><br>
-    <img src="experient/result_analyze/figure9_comparison.png" style="width:100%;" alt="Figure 9 Comparison">
-  </div>
-</div>
+<table>
+<tr>
+<td align="center" width="50%">
+<strong>Original Paper Figure 9</strong><br>
+<img src="asset/wavelet%20noise%20figure9.png" width="400" alt="Wavelet Function Figure 9">
+</td>
+<td align="center" width="50%">
+<strong>My Experimental Results (Comparison with Figure 9)</strong><br>
+<img src="experient/result_analyze/figure9_comparison.png" width="400" alt="Figure 9 Comparison">
+</td>
+</tr>
+</table>
 
 ---
 
@@ -80,12 +86,13 @@ Experiments produce results close to the original paper's Figure 8, validating t
 
 #### Perlin Noise Analysis:
 
-**Perlin 2D Noise Detailed Analysis (Octave 4)**
+* Perlin 2D Noise Detailed Analysis (Octave 4): Verifies that Perlin noise lacks band-limit characteristics
+
 <div style="text-align:center; max-width:700px; margin:auto;">
   <img src="experient/result_analyze/perlin_noise_2D_octave_4_detailed_analysis.png" style="width:100%;" alt="Perlin 2D Analysis">
 </div>
 
-**Perlin 3D Sliced Noise Detailed Analysis (Octave 4)**
+* Perlin 3D Sliced Noise Detailed Analysis: Verifies that Perlin noise sliced from 3D to 2D plane lacks band-limit characteristics
 <div style="text-align:center; max-width:700px; margin:auto;">
   <img src="experient/result_analyze/perlin_noise_3Dsliced_octave_4_detailed_analysis.png" style="width:100%;" alt="Perlin 3D Sliced Analysis">
 </div>
@@ -94,17 +101,17 @@ Experiments produce results close to the original paper's Figure 8, validating t
 
 #### Wavelet Noise Analysis (Single frequency band results):
 
-**Wavelet 2D Noise Detailed Analysis (Octave 4)**
+* Wavelet 2D Noise Analysis: Verifies that wavelet noise has band-limit characteristics
 <div style="text-align:center; max-width:700px; margin:auto;">
   <img src="experient/result_analyze/wavelet_noise_2D_octave_4_detailed_analysis.png" style="width:100%;" alt="Wavelet 2D Analysis">
 </div>
 
-**Wavelet 3D Sliced Noise Detailed Analysis (Octave 4)**
+* Wavelet 3D Sliced Noise Analysis: Verifies that wavelet noise sliced from 3D to 2D plane lacks band-limit characteristics
 <div style="text-align:center; max-width:700px; margin:auto;">
   <img src="experient/result_analyze/wavelet_noise_3Dsliced_octave_4_detailed_analysis.png" style="width:100%;" alt="Wavelet 3D Sliced Analysis">
 </div>
 
-**Wavelet 3D Projected Noise Detailed Analysis (Octave 4)**
+* Wavelet 3D Projected Noise Detailed Analysis (Octave 4): Verifies that 3D projected to 2D noise has band-limit characteristics (but not perfect)
 <div style="text-align:center; max-width:700px; margin:auto;">
   <img src="experient/result_analyze/wavelet_noise_3Dprojected_octave_4_detailed_analysis.png" style="width:100%;" alt="Wavelet 3D Projected Analysis">
 </div>

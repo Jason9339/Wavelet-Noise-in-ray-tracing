@@ -42,8 +42,6 @@ make compare
 
 ### 實驗說明
 實驗產出接近原始論文 Figure 8 的結果，驗證 wavelet noise band-limited 的特性
-成功證明以下幾點:
-
 
 ### Figure 8 比較
 > 註: 為甚麼我的實做沒有 white noise ? 
