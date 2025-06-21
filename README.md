@@ -29,16 +29,9 @@ make compare
 
 ### 渲染結果展示
 
-<div style="display:flex; flex-wrap:wrap; gap:20px; justify-content:center;">
-  <div style="flex:1; min-width:300px; max-width:400px; text-align:center;">
-    <strong>Perlin Noise 光線追蹤渲染結果</strong><br>
-    <img src="result_raytracing/raytrace_Perlin_octave4.png" style="width:100%;" alt="Perlin Ray Tracing Result">
-  </div>
-  <div style="flex:1; min-width:300px; max-width:400px; text-align:center;">
-    <strong>Wavelet 3D Noise 光線追蹤渲染結果</strong><br>
-    <img src="result_raytracing/raytrace_Wavelet3D_octave4.png" style="width:100%;" alt="Wavelet Ray Tracing Result">
-  </div>
-</div>
+| Perlin Noise 光線追蹤渲染結果 | Wavelet 3D Noise 光線追蹤渲染結果 |
+|:---:|:---:|
+| <img src="result_raytracing/raytrace_Perlin_octave4.png" width="400" alt="Perlin Ray Tracing Result"> | <img src="result_raytracing/raytrace_Wavelet3D_octave4.png" width="400" alt="Wavelet Ray Tracing Result"> |
 
 ---
 
@@ -158,18 +151,11 @@ python3 -m http.server 8000
 # 在瀏覽器中開啟 http://localhost:8000
 ```
 
-### Web 可視化結果展示  
+### Web 可視化結果展示
 
-<div style="display:flex; flex-wrap:wrap; gap:20px; justify-content:center;">
-  <div style="flex:1; min-width:300px; max-width:400px; text-align:center;">
-    <strong>Perlin Noise 互動式可視化介面</strong><br>
-    <img src="asset/threejs_perlin.png" style="width:100%;" alt="Perlin Noise Web Visualization">
-  </div>
-  <div style="flex:1; min-width:300px; max-width:400px; text-align:center;">
-    <strong>Wavelet Noise 互動式可視化介面</strong><br>
-    <img src="asset/threejs_wavelet.png" style="width:100%;" alt="Wavelet Noise Web Visualization">
-  </div>
-</div>
+| Perlin Noise 互動式可視化介面 | Wavelet Noise 互動式可視化介面 |
+|:---:|:---:|
+| <img src="asset/threejs_perlin.png" width="400" alt="Perlin Noise Web Visualization"> | <img src="asset/threejs_wavelet.png" width="400" alt="Wavelet Noise Web Visualization"> |
 
 ---
 
