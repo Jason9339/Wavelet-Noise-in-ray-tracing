@@ -4,19 +4,6 @@
 
 This project integrates wavelet noise with ray tracing technology, providing complete research and visualization tools.
 
----
-
-## English
-
-### Project Overview
-This project contains three core functional modules, covering the complete process from theoretical research to practical applications.
-
-### Build Project
-```bash
-make
-```
-
----
 
 ## Part 1: Ray Tracing Rendering
 
@@ -122,6 +109,8 @@ Experiments produce results close to the original paper's Figure 8, validating t
 
 #### Overall Comparison Analysis:
 
+Verifies that wavelet noise sliced from 3D to 2D plane lacks band-limit characteristics, and that 3D projected to 2D noise has band-limit characteristics (but not perfect)
+
 **Wavelet Noise Complete Comparison (Octave 4)**
 <div style="text-align:center; max-width:700px; margin:auto;">
   <img src="experient/result_analyze/wavelet_full_comparison_octave_4.png" style="width:100%;" alt="Wavelet Full Comparison">
@@ -129,11 +118,15 @@ Experiments produce results close to the original paper's Figure 8, validating t
 
 ### Usage
 ```bash
-# Build and run noise experiments (generate raw data)
-cd experient && make && make run
+# Enter experiment directory and build
+cd experient 
+make
+
+# Execute noise experiments (generate raw data)
+make run
 
 # Analyze experimental results
-cd experient && python3 analyze.py
+python3 analyze.py
 ```
 
 ---
@@ -146,16 +139,16 @@ Interactive web interface for real-time observation and manipulation of noise ef
 ### Usage
 ```bash
 # Convert raw data to JSON format
-cd threejs && python3 convert_raw_to_json.py --batch
+cd threejs
+python3 convert_raw_to_json.py --batch
 
 # Start web server
-cd threejs && python3 -m http.server 8000
+python3 -m http.server 8000
 
 # Open http://localhost:8000 in browser
 ```
 
 ### Web Visualization Results
-*(Original version has interactive features)*
 
 | Perlin Noise Interactive Visualization Interface | Wavelet Noise Interactive Visualization Interface |
 |:---:|:---:|

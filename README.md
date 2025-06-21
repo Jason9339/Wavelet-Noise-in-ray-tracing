@@ -6,7 +6,6 @@
 
 ![實驗說明](./asset/實驗說明.png)
 
----
 
 ## 第一部分：光線追蹤渲染
 
@@ -111,6 +110,8 @@ make compare
 ---
 
 #### 整體比較分析：
+
+驗證 wavelet noise 從 3D 切出 2D 平面不具備 band-limit 特性，並且 3D project 到 2D 的 noise 具有 band-limit 特性(but not perfect)
 
 **Wavelet Noise 完整比較 (Octave 4)**  
 <div style="text-align:center; max-width:700px; margin:auto;">
